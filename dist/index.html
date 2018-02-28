@@ -270,7 +270,7 @@ table.table-fixed thead tr th {
 				})
 				.done(function(data) {
 					$.each(data.items, function(idx, itm) {
-						$('#voicemail-table>tbody').append($('<tr><td width="20%">'+moment(itm.created_at*1000).format('MM/DD/YY hh:mm a')+'</td><td width="15%">'+itm.to+'</td><td width="15%">'+itm.extension.extension+'</td><td width="20%">'+itm.extension.name+'</td><td width="20%">'+itm.duration+' sec</td><td width="10%" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play"></span></button><button type="button" class="btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
+						$('#voicemail-table>tbody').append($('<tr><td width="20%">'+moment(itm.created_at*1000).format('MM/DD/YY hh:mm a')+'</td><td width="15%">'+itm.to+'</td><td width="15%">'+itm.extension.extension+'</td><td width="20%"><nobr>'+itm.extension.name+'</nobr></td><td width="20%">'+itm.duration+' sec</td><td width="10%" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play"></span></button><button type="button" class="btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
 					});
 					$('[name=voiceMail]').val(data.total);
 				});
@@ -300,5 +300,5 @@ table.table-fixed thead tr th {
 			});
 		</script>
 	</body>
-	
+
 </html>
