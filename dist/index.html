@@ -40,10 +40,28 @@ table.table-fixed thead tr th {
 		</style>
 	</head>
 	<body>
-		<div class="container-fluid">
-		<h1>Phone.com Dashboard POC</h1>
+	<nav class="navbar navbar-expand-md navbar-light bg-light navbar-fixed-top">
+		<a class="navbar-brand" href="#">
+			<img alt="Brand" height="60" src="https://www.spectrio.com/wp-content/uploads/2015/03/Spectrio_Logo2015_273x96.png"/>		
+			VoIP POC		
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item"><a class="nav-link" href="#metrics-section">Metrics</a></li>
+				<li class="nav-item"><a class="nav-link" href="#phonenumbers-section">Phone Numbers</a></li>
+				<li class="nav-item"><a class="nav-link" href="#extensions-section">Extensions</a></li>
+				<li class="nav-item"><a class="nav-link" href="#voicemail-section">Voice Mail</a></li>
+			</ul>
+		</div>
+		</nav>		
 
-		<div class="row call-log-row">
+		<div class="container-fluid">
+
+		<div class="row call-log-row" id="metrics-section" >
 			<div class="col-sm-2 offset-sm-2">
 				<div class="card call-log-card bg-primary">
 					<div class="card-body">
@@ -92,7 +110,7 @@ table.table-fixed thead tr th {
 				<textarea class="form-control" name="address" aria-describedby="addressHelp" readonly rows="4"></textarea>
 				</div>
 			</div-->	
-			<div class="form-group row">
+			<div class="form-group row" id="phonenumbers-section">
 				<label for="phoneNumbers" class="col-sm-2">Phone Numbers</label>
 				<div class="col-sm-10">
 					<table class="table table-fixed table-sm" id="phone-numbers-table">
@@ -104,7 +122,7 @@ table.table-fixed thead tr th {
 					</table>
 				</div>
 			</div>
-			<div class="form-group row">
+			<div class="form-group row" id="extensions-section">
 				<label for="extensions" class="col-sm-2">Extensions</label>
 				<div class="col-sm-10">
 					<table class="table table-fixed table-sm" id="extensions-table">
@@ -119,7 +137,7 @@ table.table-fixed thead tr th {
 					</table>
 				</div>
 			</div>
-			<div class="form-group row">
+			<div class="form-group row" id="voicemail-section">
 				<label for="voicemail" class="col-sm-2">Voice Mail</label>
 				<div class="col-sm-10">
 					<table class="table table-fixed table-sm" id="voicemail-table">
