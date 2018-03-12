@@ -7,170 +7,45 @@
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css"/>		
 		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>        
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>        
 		<style>
-.table-fixed {
-	width: 100%;
-	border: 1px silver solid;
-}
-table.table-fixed tbody {
-	height:120px;
-	overflow-y:auto;
-	width: 100%;
-}
-table.table-fixed thead,tbody,tr,td,th{
-    display:block;
-}
-table.table-fixed tbody td {
-    float:left;
-}
-table.table-fixed thead tr th {
-	float:left;
-}
-.call-log-card {
-	text-align: center;
-}
-.call-log-row {
-	padding-bottom:15px;
-}
-.voicemail-button {
-	width:32px;
-	margin-right:2px;
-}
 		</style>
 	</head>
 	<body style="padding-top:105px">
 		<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
 		<a class="navbar-brand" href="#">
 			<img alt="Brand" height="60" src="https://www.spectrio.com/wp-content/uploads/2015/03/Spectrio_Logo2015_273x96.png"/>		
-			VoIP POC		
+			Portal POC
 		</a>
-		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-			<span class="navbar-toggler-icon"></span>
-		</button>
-		
-		<div class="collapse navbar-collapse" id="navbarSupportedContent">
-			<ul class="navbar-nav mr-auto">
-				<li class="nav-item"><a class="nav-link" href="#metrics-section">Metrics</a></li>
-				<li class="nav-item"><a class="nav-link" href="#phonenumbers-section">Phone Numbers</a></li>
-				<li class="nav-item"><a class="nav-link" href="#extensions-section">Extensions</a></li>
-				<li class="nav-item"><a class="nav-link" href="#voicemail-section">Voice Mail</a></li>
-			</ul>
-		</div>
 		</nav>		
 
 		<div class="container-fluid">
 
-		<div class="row call-log-row" id="metrics-section" >
-			<div class="col-sm-2 offset-sm-2">
-				<div class="card call-log-card bg-primary">
+			<div class="card-deck">
+				<div class="card" style="width: 18rem;">
+					<img class="card-img-top" src="data:image/png;base64,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">
 					<div class="card-body">
-						<h1 class="card-title text-white" id="1day">--</h1>
+						<p class="card-text">Includes basic metrics, phone number list, extension list, voice mail list with pagination, voice mail playing and downloading.</p>
 					</div>
-					<div class="card-footer bg-light text-primary">
-						Total Calls Last 24 Hours
+					<div class="card-footer text-center">
+						<a href="phone.com.html" class="btn btn-primary">View POC</a>
+					</div>
+	
+				</div>
+				<div class="card" style="width: 18rem;">
+					<img class="card-img-top" style="" src="http://www.nettranslate.co.uk/wp-content/uploads/2013/10/purple.png" alt="">
+					<div class="card-body">
+						<p class="card-text">...</p>
+					</div>
+					<div class="card-footer text-center">
+						<a href="purple.html" class="btn btn-primary">View POC</a>
 					</div>
 				</div>
 			</div>
-			<div class="col-sm-2">
-				<div class="card call-log-card bg-primary">
-					<div class="card-body">
-						<h1 class="card-title text-white" id="7days">--</h1>
-					</div>
-					<div class="card-footer bg-light text-primary">
-						Total Calls Last 7 <nobr>days&nbsp;&nbsp;</nobr>
-					</div>
-				</div>
-			</div>
-			<div class="col-sm-2">
-				<div class="card call-log-card bg-primary">
-					<div class="card-body">
-						<h1 class="card-title text-white" id="30days">--</h1>
-					</div>
-					<div class="card-footer bg-light text-primary">
-						Total Calls Last 30 days
-					</div>
-				</div>
-			</div>		
-			<div class="col-sm-2">
-				<div class="card call-log-card bg-primary">
-					<div class="card-body">
-						<h1 class="card-title text-white" id="90days">--</h1>
-					</div>
-					<div class="card-footer bg-light text-primary">
-						Total Calls Last 90 days
-					</div>
-				</div>
-			</div>
+
 		</div>
-		<form>
-			<!--div class="form-group row">
-				<label for="name" class="col-sm-2">Billing Contact</label>
-				<div class="col-sm-10">
-				<textarea class="form-control" name="address" aria-describedby="addressHelp" readonly rows="4"></textarea>
-				</div>
-			</div-->	
-			<div class="form-group row" id="phonenumbers-section">
-				<label for="phoneNumbers" class="col-sm-2">Phone Numbers</label>
-				<div class="col-sm-10">
-					<table class="table table-fixed table-sm" id="phone-numbers-table">
-						<thead>
-							<th scope="col" width="20%">Phone Number</th>
-							<th scope="col" width="80%">Name</th>
-						</thead>
-						<tbody></tbody>
-					</table>
-					<div class="float-right">Total: <span id="phonenumbers-total">--</span></div>
-				</div>
-			</div>
-			<div class="form-group row" id="extensions-section">
-				<label for="extensions" class="col-sm-2">Extensions</label>
-				<div class="col-sm-10">
-					<table class="table table-fixed table-sm" id="extensions-table">
-						<thead>
-							<th scope="col" width="10%">Extension</th>
-							<th scope="col" width="30%">Name</th>
-							<th scope="col" width="25%">Caller Id</th>
-							<th scope="col" width="10%">Area Code</th>
-							<th scope="col" width="25%">Time Zone</th>
-						</thead>
-						<tbody></tbody>
-					</table>
-					<div class="float-right">Total: <span id="extensions-total">--</span></div>
-				</div>
-			</div>
-			<div class="form-group row" id="voicemail-section">
-				<label for="voicemail" class="col-sm-2">Voice Mail</label>
-				<div class="col-sm-10">
-					<table class="table table-fixed table-sm" id="voicemail-table">
-						<thead>
-							<th scope="col" width="20%">Date/Time</th>
-							<th scope="col" width="15%">Phone Number</th>
-							<th scope="col" width="15%">Extension</th>
-							<th scope="col" width="20%">Name</th>
-							<th scope="col" width="20%">Duration</th>
-							<th scope="col" width="10%">&nbsp;</th>
-						</thead>
-						<tbody></tbody>
-					</table>
-					<nav>
-						<ul class="pagination">
-							<li class="page-item"><a id="previous" class="page-link" href="#voicemail-section">Previous</a></li>
-							<li class="page-item"><a id="next" class="page-link" href="#voicemail-section">Next</a></li>
-							<li class="page-item" style="padding:5px;"><span id="page-info"></span></li>
-						</ul>
-					</nav>
-					<div id="audio-container" style="display:none">
-						<audio controls id="voicemail-audio">
-							<source id="player-source" src="" type="audio/wav">
-							Your browser does not support the audio element.
-						</audio>
-					</div>
-				</div>
-			</div>
-			</form>
-		</div>
-		<div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog" data-show="true">
+		<div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
 			<div class="modal-dialog modal-dialog-centered" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
@@ -201,152 +76,22 @@ table.table-fixed thead tr th {
 		</div>
 		<script>
 			//labcorp 2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw
-			//account 1335221
-			//spectrio YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H
-			//account 74241
-			var headers = { Authorization: 'Bearer 2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw' };
-			var accountId = 1335221;
-			var lastOffset = 0;
-			function fetchVoiceMail(offset) {
-				offset = offset || 0;
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/voicemail?limit=50&sort[created_at]=desc&offset='+offset, {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#voicemail-table>tbody').empty();
-					$.each(data.items, function(idx, itm) {
-						$('#voicemail-table>tbody').append($('<tr><td width="20%">'+moment(itm.created_at*1000).format('MM/DD/YY hh:mm a')+'</td><td width="15%">'+itm.to+'</td><td width="15%">'+itm.extension.extension+'</td><td width="20%"><nobr>'+itm.extension.name+'</nobr></td><td width="20%">'+itm.duration+' sec</td><td width="10%" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play"></span></button><button type="button" class="btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
-					});
-					$('#page-info').text((offset+1) +' - '+ Math.min(offset+50, data.total) +' of '+data.total);
-					lastOffset = offset;
-
-				});
-				
-			}
-
-			function playHandler() {
-				if (this.readyState === this.DONE) {
-					if (this.status === 200) {
-						var downloadUrl = URL.createObjectURL(this.response);
-						const audio = document.querySelector('#voicemail-audio');
-						audio.src = downloadUrl;
-						audio.play();
-						$('#audio-container').show();
-					} else {
-						console.error('XHR failed', this);
-					}
-				}
-			};
-
-			function downloadHandler() {
-				if (this.readyState === this.DONE) {
-					if (this.status === 200) {
-						var downloadLink      = document.createElement('a');
-						downloadLink.target   = '_blank';
-						downloadLink.download = 'voicemail.wav';
-						var URL = window.URL || window.webkitURL;
-						var downloadUrl = URL.createObjectURL(this.response)
-						downloadLink.href = downloadUrl;
-						document.body.appendChild(downloadLink);
-						downloadLink.click();
-						document.body.removeChild(downloadLink);
-						URL.revokeObjectURL(downloadUrl);
-					} else {
-						console.error('XHR failed', this);
-					}
-				}
-			};
-
-			function downloadVoiceMail(id, handler) {
-				var xhr = new XMLHttpRequest();
-				xhr.open('GET', 'https://api.phone.com/v4/accounts/'+accountId+'/voicemail/'+id+'/download');
-				xhr.onreadystatechange = handler;
-				xhr.responseType = 'blob';
-				xhr.setRequestHeader('Authorization', headers.Authorization);
-				xhr.send();
-			}
-
-			function loadData() {
-                /*
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId, {
-					headers: headers
-				})
-				.done(function(data) {
-					var address = data.billing_contact.address;
-					$('[name=address]').val(data.billing_contact.name+'\n'+address.line_1+'\n'+address.line_2+'\n'+address.city+' '+address.province+' '+address.postal_code+'\n');
-				});
-                */
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(7,'d').unix()), {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#7days').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(1,'d').unix()), {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#1day').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(30,'d').unix()), {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#30days').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(90,'d').unix()), {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#90days').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/phone-numbers?limit=300', {
-					headers: headers
-				})
-				.done(function(data) {
-					$.each(data.items, function(idx, itm) {
-						$('#phone-numbers-table>tbody').append($('<tr><td width="20%">'+itm.phone_number+'</td><td width="80%">'+itm.name+'</td></tr>'));						
-					});
-					$('#phonenumbers-total').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/extensions?limit=300&sort[extension]=asc', {
-					headers: headers
-				})
-				.done(function(data) {
-					$.each(data.items, function(idx, itm) {
-						$('#extensions-table>tbody').append($('<tr><td width="10%">'+itm.extension+'</td><td width="30%"><nobr>'+itm.name+'</nobr></td><td width="25%">'+itm.caller_id+'</td><td width="10%">'+(itm.local_area_code || '')+'</td><td width="25%">'+itm.timezone+'</td></tr>'));						
-					});
-					$('#extensions-total').text(data.total);
-				});
-				fetchVoiceMail();
-			}
 			$(document).ready(function() {
-				$('#loginModal').modal('show');
-				$('#previous').on('click', function() {
-					if (lastOffset > 0)
-						fetchVoiceMail(lastOffset - 50);
-				});
-				$('#next').on('click', function() {
-					fetchVoiceMail(lastOffset + 50);
-				});
-				$(document).on('click', '.downloadButton',function() {
-					var voiceMailId = $(this).data('voicemail-id');
-					downloadVoiceMail(voiceMailId, downloadHandler);
-				});
-				$(document).on('click', '.playButton', function() {
-					var voiceMailId = $(this).data('voicemail-id');
-					downloadVoiceMail(voiceMailId, playHandler);
-				});
+                if (Cookies.get('loggedInX')!='true') {
+                    $('#loginModal').modal('show');
+                }
+
 				$('#login-button').on('click', function() {
 					var b = eval(atob('YnRvYSgkKCdbbmFtZT0icGFzc3dvcmQiXScpLnZhbCgpKSA9PSAnTVRJelUzQmxZM1J5YVc4a0pBPT0nICYmIGJ0b2EoJCgnW25hbWU9InVzZXJuYW1lIl0nKS52YWwoKSkgPT0gJ1UzQmxZM1J5YVc4PSc='));
 					if (b)  {
 						$('#login-error').hide();
-						loadData();
 						$('#loginModal').modal('hide');
+                        Cookies.set('loggedInX', 'true', {expires:1/24});
 					}
 					else {
 						$('#login-error').text('Invalid username or password');
 						$('#login-error').show();
+                        Cookies.set('loggedInX', 'false', {expires:1/24});
 					}
 				});
 			});

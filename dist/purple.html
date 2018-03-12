@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css"/>		
+		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>
+        <script src="../js/sha256.js"></script>
+		<style>
+.table-fixed {
+	width: 100%;
+	border: 1px silver solid;
+}
+table.table-fixed tbody {
+	height:120px;
+	overflow-y:auto;
+	width: 100%;
+}
+table.table-fixed thead,tbody,tr,td,th{
+    display:block;
+}
+table.table-fixed tbody td {
+    float:left;
+}
+table.table-fixed thead tr th {
+	float:left;
+}
+.call-log-card {
+	text-align: center;
+}
+.call-log-row {
+	padding-bottom:15px;
+}
+.voicemail-button {
+	width:32px;
+	margin-right:2px;
+}
+		</style>
+	</head>
+	<body style="padding-top:105px">
+		<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
+		<a class="navbar-brand" href="#">
+			<img alt="Brand" height="60" src="https://www.spectrio.com/wp-content/uploads/2015/03/Spectrio_Logo2015_273x96.png"/>		
+			Guest Wifi POC		
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item"><a class="nav-link" href="#venues-section">Venues</a></li>
+			</ul>
+			<ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                </ul>		
+            </div>
+		</nav>		
+
+		<div class="container-fluid">
+            <form>
+                <div class="form-group row" id="venues-section">
+                    <label for="venues" class="col-sm-2">Venues</label>
+                    <div class="col-sm-8">
+                        <select class="form-control" id="venues-select" name="venues">
+                            <option value="-1">Select Venue</option>
+                        </select>
+                        
+                    </div>
+                    <div class="col-sm-2">
+                        <button class="btn btn-primary" id="export-all" disabled="true">Export All</button>
+                    </div>
+                </div>
+                <div class="form-group row" id="venues-section">
+                    <label for="phoneNumbers" class="col-sm-2">Address</label>
+                    <div class="col-sm-5">
+                        <textarea class="form-control" name="address" readonly="true" style="height:160px;"></textarea>
+                    </div>
+                    <div class="col-sm-5">
+                        <div id="map" style="width:100%;height:160px;"></div>
+                    </div>
+                </div>
+                </form>            
+            <div class="row pb-4" id="metrics-section">
+                <div class="col-sm-10 offset-sm-2">
+                    <div class="card-deck">
+                        <div class="card call-log-card bg-primary">
+                            <div class="card-body">
+                                <h1 class="card-title text-white" id="onlineNow">--</h1>
+                            </div>
+                            <div class="card-footer bg-light text-primary">
+                                    Users Online <nobr>Now&nbsp;&nbsp;</nobr>
+                            </div>
+                        </div>
+                        <div class="card call-log-card bg-primary">
+                            <div class="card-body">
+                                <h1 class="card-title text-white" id="online24">--</h1>
+                            </div>
+                            <div class="card-footer bg-light text-primary">
+                                    Users Online <nobr>Last 24 Hours&nbsp;&nbsp;</nobr>
+                            </div>
+                        </div>
+                </div>		
+            </div>
+		</div>
+		<div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="exampleModalLongTitle">Login</h5>
+					</div>
+					<div class="modal-body">
+						<div id="login-error" class="alert alert-danger" role="alert" style="display:none"></div>
+						<form>
+							<div class="form-group row">
+								<label for="name" class="col-sm-2">Username</label>
+								<div class="col-sm-10">
+								<input class="form-control" name="username"/>
+								</div>
+							</div>
+							<div class="form-group row">
+								<label for="name" class="col-sm-2">Password</label>
+								<div class="col-sm-10">
+								<input class="form-control" type="password" name="password"/>
+								</div>
+							</div>
+						</form>						
+					</div>
+					<div class="modal-footer">
+						<button type="button" id="login-button" class="btn btn-primary">Login</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+            var purpleProxy = 'https://cq31te3cbh.execute-api.us-east-1.amazonaws.com/dev/purpleProxy';
+            var venues;
+			function getVenues() {
+                var path = '/api/company/v1/venues';
+                console.log(purpleProxy + '?path='+path);
+				$.ajax(purpleProxy + '?path='+path)
+				    .done(function(responseObj) {
+                        console.log(responseObj);
+                        if (responseObj.success && responseObj.data.venues) {
+                            venues = responseObj.data.venues;
+                            venues.sort(function(a, b){return a.name.localeCompare(b.name);});
+                            $.each(venues, function(idx, itm) {
+                                $('#venues-select').append('<option value="'+itm.id+'">'+itm.name+'</name>');
+                            });
+                            $('#export-all').removeAttr('disabled');
+                        }
+				    });
+            }
+            var map;
+            function myMap() {
+                var mapCanvas = document.getElementById("map");
+                var mapOptions = {
+                    //center: new google.maps.LatLng(51.5, -0.2),
+                    zoom: 14
+                };
+                map = new google.maps.Map(mapCanvas, mapOptions);
+                if (Cookies.get('loggedInX')!='true') {
+                    $('#loginModal').modal('show');
+                }
+                else {
+                    getVenues();
+                }
+            }
+
+            function exportCSV(csv, name) {
+                let csvContent = "data:text/csv;charset=utf-8,"+csv;
+                var encodedUri = encodeURI(csvContent);
+                var link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", name);
+                document.body.appendChild(link); // Required for FF
+                link.click(); // This will download the data file named "my_data.csv". 
+                document.body.removeChild(link);               
+            }
+
+            function selectVenue(matchId) {
+                var venue = $.grep(venues, function(itm, idx) {
+                    return itm.id == matchId;
+                });
+                var addressString = '';
+                if (venue.length) {
+                    addressString = venue[0].name + '\n'+venue[0].address1+'\n';
+                    if (venue[0].address2) addressString += venue[0].address2 + '\n';
+                    if (venue[0].address3) addressString += venue[0].address3 + '\n';
+                    if (venue[0].address4) addressString += venue[0].address4 + '\n';
+                    if (venue[0].town) addressString += venue[0].town + '\n';
+                    $('#onlineNow').text(venue[0].users_online_now);
+                    $('#online24').text(venue[0].users_online_24_hours);
+                    var myCenter = new google.maps.LatLng(venue[0].latitude,venue[0].longitude);
+                    var marker = new google.maps.Marker({position: myCenter, venueId:venue[0].id});
+                    marker.setMap(map);
+                    map.setCenter(myCenter);
+                    
+                }
+                $('[name="address"]').val(addressString);                
+            }
+			$(document).ready(function() {
+                $('#venues-select').on('change', function(evt) {
+                    var sel = $(this);
+                    var matchId = parseInt(sel.val());
+                    selectVenue(matchId);
+                });
+                $('#export-all').on('click', function() {
+                    var csv = 'id,name,address1,address2,address3,address4,town,telephone,email,users_online_now,users_online_24_hours,status\r\n';
+                    $.each(venues, function(idx, itm) {
+                        csv +=(itm.id+',"'+itm.name+'","'+(itm.address1||'')+'","'+(itm.address2||'')+'","'+(itm.address3||'')+'","'+(itm.address4||'')+'","'+(itm.town||'')+'","'+(itm.telephone||'')+'","'+(itm.email||'')+'",'+itm.users_online_now+','+itm.users_online_24_hours+',"'+itm.status+'"');
+                        csv += '\r\n';
+                    });
+                    exportCSV(csv, 'venues.csv');
+                });
+
+				$('#login-button').on('click', function() {
+					var b = eval(atob('YnRvYSgkKCdbbmFtZT0icGFzc3dvcmQiXScpLnZhbCgpKSA9PSAnTVRJelUzQmxZM1J5YVc4a0pBPT0nICYmIGJ0b2EoJCgnW25hbWU9InVzZXJuYW1lIl0nKS52YWwoKSkgPT0gJ1UzQmxZM1J5YVc4PSc='));
+					if (b)  {
+						$('#login-error').hide();
+						getVenues();
+						$('#loginModal').modal('hide');
+                        Cookies.set('loggedInX', 'true', {expires:1/24});
+					}
+					else {
+						$('#login-error').text('Invalid username or password');
+						$('#login-error').show();
+                        Cookies.set('loggedInX', 'false', {expires:1/24});
+					}
+				});
+			});
+		</script>
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDs1ehZE1qyN6A-PvP1RuLxoXuQ35b2goA&callback=myMap"></script>        
+    </body>
+
+</html>

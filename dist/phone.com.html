@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css"/>		
+		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>        
+		<style>
+.table-fixed {
+	width: 100%;
+	border: 1px silver solid;
+}
+table.table-fixed tbody {
+	height:120px;
+	overflow-y:auto;
+	width: 100%;
+}
+table.table-fixed thead,tbody,tr,td,th{
+    display:block;
+}
+table.table-fixed tbody td {
+    float:left;
+}
+table.table-fixed thead tr th {
+	float:left;
+}
+.call-log-card {
+	text-align: center;
+}
+.call-log-row {
+	padding-bottom:15px;
+}
+.voicemail-button {
+	width:32px;
+	margin-right:2px;
+}
+		</style>
+	</head>
+	<body style="padding-top:105px">
+		<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
+		<a class="navbar-brand" href="#">
+			<img alt="Brand" height="60" src="https://www.spectrio.com/wp-content/uploads/2015/03/Spectrio_Logo2015_273x96.png"/>		
+			VoIP POC		
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item"><a class="nav-link" href="#metrics-section">Metrics</a></li>
+				<li class="nav-item"><a class="nav-link" href="#phonenumbers-section">Phone Numbers</a></li>
+				<li class="nav-item"><a class="nav-link" href="#extensions-section">Extensions</a></li>
+				<li class="nav-item"><a class="nav-link" href="#voicemail-section">Voice Mail</a></li>
+			</ul>
+			<ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                </ul>		
+            </div>
+		</nav>		
+
+		<div class="container-fluid">
+
+		<div class="row pb-4" id="metrics-section">
+			<div class="col-sm-10 offset-sm-2">
+                <div class="card-deck">
+                    <div class="card call-log-card bg-primary">
+                        <div class="card-body">
+                            <h1 class="card-title text-white" id="1day">--</h1>
+                        </div>
+                        <div class="card-footer bg-light text-primary">
+                            Total Calls Last 24 Hours
+                        </div>
+                    </div>
+                    <div class="card call-log-card bg-primary">
+                        <div class="card-body">
+                            <h1 class="card-title text-white" id="7days">--</h1>
+                        </div>
+                        <div class="card-footer bg-light text-primary">
+                            Total Calls Last 7 <nobr>days&nbsp;&nbsp;</nobr>
+                        </div>
+                    </div>
+                    <div class="card call-log-card bg-primary">
+                        <div class="card-body">
+                            <h1 class="card-title text-white" id="30days">--</h1>
+                        </div>
+                        <div class="card-footer bg-light text-primary">
+                            Total Calls Last 30 days
+                        </div>
+                    </div>
+                </div>
+			</div>		
+		</div>
+		<form>
+			<!--div class="form-group row">
+				<label for="name" class="col-sm-2">Billing Contact</label>
+				<div class="col-sm-10">
+				<textarea class="form-control" name="address" aria-describedby="addressHelp" readonly rows="4"></textarea>
+				</div>
+			</div-->	
+			<div class="form-group row" id="phonenumbers-section">
+				<label for="phoneNumbers" class="col-sm-2">Phone Numbers</label>
+				<div class="col-sm-10">
+					<table class="table table-fixed table-sm" id="phone-numbers-table">
+						<thead>
+							<th scope="col" width="40%">Phone Number</th>
+							<th scope="col" width="60%">Name</th>
+						</thead>
+						<tbody></tbody>
+					</table>
+					<div class="float-right">Total: <span id="phonenumbers-total">--</span></div>
+				</div>
+			</div>
+			<div class="form-group row" id="extensions-section">
+				<label for="extensions" class="col-sm-2">Extensions</label>
+				<div class="col-sm-10">
+                    <div class="table-responsive">
+					<table class="table table-fixed table-sm" id="extensions-table">
+						<thead>
+							<th scope="col" width="10%">Extension</th>
+							<th scope="col" width="30%">Name</th>
+							<th scope="col" width="25%"><nobr>Caller Id</nobr></th>
+							<th scope="col" width="10%" style="overflow:hidden"><nobr>Area Code</nobr></th>
+							<th scope="col" width="25%">Time Zone</th>
+						</thead>
+						<tbody></tbody>
+                    </table>
+                    </div>
+					<div class="float-right">Total: <span id="extensions-total">--</span></div>
+				</div>
+			</div>
+			<div class="form-group row" id="voicemail-section">
+				<label for="voicemail" class="col-sm-2">Voice Mail</label>
+				<div class="col-sm-10">
+                    <div class="table-responsive">
+                    <table class="table table-fixed table-sm table-striped" id="voicemail-table">
+						<thead>
+							<th scope="col" width="20%">Date/Time</th>
+							<th scope="col" width="15%"><nobr>Phone Number</nobr></th>
+							<th scope="col" width="15%">Extension</th>
+							<th scope="col" width="20%">Name</th>
+							<th scope="col" width="20%">Duration</th>
+							<th scope="col" width="10%">&nbsp;</th>
+						</thead>
+						<tbody></tbody>
+                    </table>
+                    </div>
+					<nav>
+						<ul class="pagination">
+							<li class="page-item"><a id="previous" class="page-link" href="#voicemail-section">Previous</a></li>
+							<li class="page-item"><a id="next" class="page-link" href="#voicemail-section">Next</a></li>
+							<li class="page-item" style="padding:5px;"><span id="page-info"></span></li>
+						</ul>
+					</nav>
+					<div id="audio-container" style="display:none">
+						<audio controls id="voicemail-audio">
+							<source id="player-source" src="" type="audio/wav">
+							Your browser does not support the audio element.
+						</audio>
+					</div>
+				</div>
+			</div>
+			</form>
+		</div>
+		<div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="exampleModalLongTitle">Login</h5>
+					</div>
+					<div class="modal-body">
+						<div id="login-error" class="alert alert-danger" role="alert" style="display:none"></div>
+						<form>
+							<div class="form-group row">
+								<label for="name" class="col-sm-2">Username</label>
+								<div class="col-sm-10">
+								<input class="form-control" name="username"/>
+								</div>
+							</div>
+							<div class="form-group row">
+								<label for="name" class="col-sm-2">Password</label>
+								<div class="col-sm-10">
+								<input class="form-control" type="password" name="password"/>
+								</div>
+							</div>
+						</form>						
+					</div>
+					<div class="modal-footer">
+						<button type="button" id="login-button" class="btn btn-primary">Login</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			//labcorp 2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw
+			//account 1335221
+			//spectrio YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H
+			//account 74241
+			var headers = { Authorization: 'Bearer 2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw' };
+			var accountId = 1335221;
+			var lastOffset = 0;
+			function fetchVoiceMail(offset) {
+				offset = offset || 0;
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/voicemail?limit=50&sort[created_at]=desc&offset='+offset, {
+					headers: headers
+				})
+				.done(function(data) {
+					$('#voicemail-table>tbody').empty();
+					$.each(data.items, function(idx, itm) {
+						$('#voicemail-table>tbody').append($('<tr><td width="20%">'+moment(itm.created_at*1000).format('MM/DD/YY hh:mm a')+'</td><td width="15%">'+itm.to+'</td><td width="15%">'+itm.extension.extension+'</td><td width="20%"><nobr>'+itm.extension.name+'</nobr></td><td width="20%">'+itm.duration+' sec</td><td width="10%" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play"></span></button><button type="button" class="btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
+					});
+					$('#page-info').text((offset+1) +' - '+ Math.min(offset+50, data.total) +' of '+data.total);
+					lastOffset = offset;
+
+				});
+				
+			}
+
+			function playHandler() {
+				if (this.readyState === this.DONE) {
+					if (this.status === 200) {
+						var downloadUrl = URL.createObjectURL(this.response);
+						const audio = document.querySelector('#voicemail-audio');
+						audio.src = downloadUrl;
+						audio.play();
+						$('#audio-container').show();
+					} else {
+						console.error('XHR failed', this);
+					}
+				}
+			};
+
+			function downloadHandler() {
+				if (this.readyState === this.DONE) {
+					if (this.status === 200) {
+						var downloadLink      = document.createElement('a');
+						downloadLink.target   = '_blank';
+						downloadLink.download = 'voicemail.wav';
+						var URL = window.URL || window.webkitURL;
+						var downloadUrl = URL.createObjectURL(this.response)
+						downloadLink.href = downloadUrl;
+						document.body.appendChild(downloadLink);
+						downloadLink.click();
+						document.body.removeChild(downloadLink);
+						URL.revokeObjectURL(downloadUrl);
+					} else {
+						console.error('XHR failed', this);
+					}
+				}
+			};
+
+			function downloadVoiceMail(id, handler) {
+				var xhr = new XMLHttpRequest();
+				xhr.open('GET', 'https://api.phone.com/v4/accounts/'+accountId+'/voicemail/'+id+'/download');
+				xhr.onreadystatechange = handler;
+				xhr.responseType = 'blob';
+				xhr.setRequestHeader('Authorization', headers.Authorization);
+				xhr.send();
+			}
+
+			function loadData() {
+                /*
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId, {
+					headers: headers
+				})
+				.done(function(data) {
+					var address = data.billing_contact.address;
+					$('[name=address]').val(data.billing_contact.name+'\n'+address.line_1+'\n'+address.line_2+'\n'+address.city+' '+address.province+' '+address.postal_code+'\n');
+				});
+                */
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(7,'d').unix()), {
+					headers: headers
+				})
+				.done(function(data) {
+					$('#7days').text(data.total);
+				});
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(1,'d').unix()), {
+					headers: headers
+				})
+				.done(function(data) {
+					$('#1day').text(data.total);
+				});
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(30,'d').unix()), {
+					headers: headers
+				})
+				.done(function(data) {
+					$('#30days').text(data.total);
+				});
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/phone-numbers?limit=300', {
+					headers: headers
+				})
+				.done(function(data) {
+					$.each(data.items, function(idx, itm) {
+						$('#phone-numbers-table>tbody').append($('<tr><td width="40%">'+itm.phone_number+'</td><td width="60%">'+itm.name+'</td></tr>'));						
+					});
+					$('#phonenumbers-total').text(data.total);
+				});
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/extensions?limit=300&sort[extension]=asc', {
+					headers: headers
+				})
+				.done(function(data) {
+					$.each(data.items, function(idx, itm) {
+						$('#extensions-table>tbody').append($('<tr><td width="10%">'+itm.extension+'</td><td width="30%"><nobr>'+itm.name+'</nobr></td><td width="25%">'+itm.caller_id+'</td><td width="10%">'+(itm.local_area_code || '')+'</td><td width="25%">'+itm.timezone+'</td></tr>'));						
+					});
+					$('#extensions-total').text(data.total);
+				});
+				fetchVoiceMail();
+			}
+			$(document).ready(function() {
+                if (Cookies.get('loggedInX')!='true') {
+                    $('#loginModal').modal('show');
+                }
+                else {
+                    loadData();
+                }
+				$('#previous').on('click', function() {
+					if (lastOffset > 0)
+						fetchVoiceMail(lastOffset - 50);
+				});
+				$('#next').on('click', function() {
+					fetchVoiceMail(lastOffset + 50);
+				});
+				$(document).on('click', '.downloadButton',function() {
+					var voiceMailId = $(this).data('voicemail-id');
+					downloadVoiceMail(voiceMailId, downloadHandler);
+				});
+				$(document).on('click', '.playButton', function() {
+					var voiceMailId = $(this).data('voicemail-id');
+					downloadVoiceMail(voiceMailId, playHandler);
+				});
+				$('#login-button').on('click', function() {
+					var b = eval(atob('YnRvYSgkKCdbbmFtZT0icGFzc3dvcmQiXScpLnZhbCgpKSA9PSAnTVRJelUzQmxZM1J5YVc4a0pBPT0nICYmIGJ0b2EoJCgnW25hbWU9InVzZXJuYW1lIl0nKS52YWwoKSkgPT0gJ1UzQmxZM1J5YVc4PSc='));
+					if (b)  {
+						$('#login-error').hide();
+						loadData();
+						$('#loginModal').modal('hide');
+                        Cookies.set('loggedInX', 'true', {expires:1/24});
+					}
+					else {
+						$('#login-error').text('Invalid username or password');
+						$('#login-error').show();
+                        Cookies.set('loggedInX', 'false'), {expires:1/24};
+					}
+				});
+			});
+		</script>
+	</body>
+
+</html>
