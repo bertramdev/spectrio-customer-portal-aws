@@ -65,29 +65,29 @@ table.table-fixed thead tr th {
 
 		<div class="container-fluid">
             <form>
-                <div class="form-group row" id="venues-section">
-                    <label for="venues" class="col-sm-2">Venues</label>
-                    <div class="col-sm-8">
-                        <select class="form-control" id="venues-select" name="venues">
-                            <option value="-1">Select Venue</option>
-                        </select>
-                        
-                    </div>
-                    <div class="col-sm-2">
-                        <button class="btn btn-primary" id="export-all" type="button" disabled="true">Export All</button>
-                    </div>
+            <div class="form-group row" id="venues-section">
+                <label for="venues" class="col-sm-2">Venues</label>
+                <div class="col-sm-8">
+                    <select class="form-control" id="venues-select" name="venues">
+                        <option value="-1">Select Venue</option>
+                    </select>
+                    
                 </div>
-                <div class="form-group row" id="venues-section">
-                    <label for="phoneNumbers" class="col-sm-2">Address</label>
-                    <div class="col-sm-5">
-                        <textarea class="form-control" name="address" readonly="true" style="height:160px;"></textarea>
-                    </div>
-                    <div class="col-sm-5">
-                        <div id="map" style="width:100%;height:160px;"></div>
-                    </div>
+                <div class="col-sm-2">
+                    <button class="btn btn-primary" id="export-all" type="button" disabled="true">Export All</button>
                 </div>
-                </form>            
-            <div class="row pb-4" id="metrics-section">
+            </div>
+            <div class="form-group row" id="venues-section">
+                <label for="phoneNumbers" class="col-sm-2">Address</label>
+                <div class="col-sm-5">
+                    <textarea class="form-control" name="address" readonly="true" style="height:160px;"></textarea>
+                </div>
+                <div class="col-sm-5">
+                    <div id="map" style="width:100%;height:160px;"></div>
+                </div>
+            </div>
+            </form>            
+            <div class="row pb-2" id="metrics-section">
                 <div class="col-sm-10 offset-sm-2">
                     <div class="card-deck">
                         <div class="card call-log-card bg-primary">
@@ -95,7 +95,7 @@ table.table-fixed thead tr th {
                                 <h1 class="card-title text-white" id="onlineNow">--</h1>
                             </div>
                             <div class="card-footer bg-light text-primary">
-                                    Users Online <nobr>Now&nbsp;&nbsp;</nobr>
+                                Users Online <nobr>Now&nbsp;&nbsp;</nobr>
                             </div>
                         </div>
                         <div class="card call-log-card bg-primary">
@@ -103,12 +103,29 @@ table.table-fixed thead tr th {
                                 <h1 class="card-title text-white" id="online24">--</h1>
                             </div>
                             <div class="card-footer bg-light text-primary">
-                                    Users Online <nobr>Last 24 Hours&nbsp;&nbsp;</nobr>
+                                Users Online <nobr>Last 24 Hours&nbsp;&nbsp;</nobr>
                             </div>
                         </div>
+                    </div>
                 </div>		
             </div>
-		</div>
+            <div class="row pt-2" id="exports-section">
+                <div class="col-sm-10 offset-sm-2">
+                    <div class="btn-group">
+                        <button type="button" id="export-visitors" data-days="30" class="export-btn btn btn-primary" disabled="true">Export Visitors Last <span id="visitor-days">30</span> Days</button>
+                        <button type="button" class="export-btn btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled="true">
+                            <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item visitors-range" href="#" data-days="7">7 Days</a>
+                            <a class="dropdown-item visitors-range" href="#" data-days="30">30 Days</a>
+                            <a class="dropdown-item visitors-range" href="#" data-days="90">90 Days</a>
+                            <a class="dropdown-item visitors-range" href="#" data-days="180">180 Days</a>
+                            <a class="dropdown-item visitors-range" href="#" data-days="365">365 Days</a>
+                        </div>
+                    </div>                    
+                </div>
+            </div>
 		<div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
 			<div class="modal-dialog modal-dialog-centered" role="document">
 				<div class="modal-content">
@@ -157,6 +174,30 @@ table.table-fixed thead tr th {
                         }
 				    });
             }
+			function exportVisitors() {
+                var path = '/api/company/v1/venue/'+$('#venues-select').val()+'/visitors?';
+                var days = parseInt($('#export-visitors').data('days'));
+                path += ('from='+moment().add(-1*days, 'days').format('YYYYMMDD'));
+                path += ('&to='+moment().format('YYYYMMDD'));
+                console.log(purpleProxy + '?path='+path);
+				$.ajax(purpleProxy + '?path='+path)
+				    .done(function(responseObj) {
+                        console.log(responseObj);
+                        if (responseObj.success && responseObj.data.visitors) {
+                            var visitors = responseObj.data.visitors;
+                            var csv = 'id,first_name,last_name,gender,date_of_birth,location,email,mobile,first_seen,last_seen,visits,source\r\n';
+                            $.each(visitors, function(idx, itm) {
+                                csv +=(itm.id+',"'+itm.first_name+'","'+(itm.last_name||'')+'","'+(itm.gender||'')+'","'+(itm.date_of_birth||'')+'","'+(itm.location||'')+'","'+(itm.email||'')+'","'+(itm.mobile||'')+'","'+(itm.first_seen||'')+'",'+itm.last_seen+','+itm.visits+',"'+itm.source+'"');
+                                csv += '\r\n';
+                            });
+                            exportCSV(csv, 'visitors.csv');
+                        }
+                        else {
+                            alert('No vistors found.');
+                        }
+				    });
+            }
+
             var map;
             function myMap() {
                 var mapCanvas = document.getElementById("map");
@@ -203,13 +244,22 @@ table.table-fixed thead tr th {
                     map.setCenter(myCenter);
                     
                 }
-                $('[name="address"]').val(addressString);                
+                $('[name="address"]').val(addressString);        
+                $('.export-btn').removeAttr('disabled');       
             }
 			$(document).ready(function() {
                 $('#venues-select').on('change', function(evt) {
                     var sel = $(this);
                     var matchId = parseInt(sel.val());
                     selectVenue(matchId);
+                });
+                $('#export-visitors').on('click', function() {
+                    exportVisitors();
+                });
+                $('.visitors-range').on('click', function() {
+                    var days = $(this).data('days');
+                    $('#export-visitors').data('days', days);
+                    $('#visitor-days').text(days);
                 });
                 $('#export-all').on('click', function() {
                     var csv = 'id,name,address1,address2,address3,address4,town,telephone,email,users_online_now,users_online_24_hours,status\r\n';
