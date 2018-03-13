@@ -95,7 +95,7 @@ table.table-fixed thead tr th {
                                 <h1 class="card-title text-white" id="onlineNow">--</h1>
                             </div>
                             <div class="card-footer bg-light text-primary">
-                                Users Online <nobr>Now&nbsp;&nbsp;</nobr>
+                                Guests Online <nobr>Now&nbsp;&nbsp;</nobr>
                             </div>
                         </div>
                         <div class="card call-log-card bg-primary">
@@ -103,7 +103,7 @@ table.table-fixed thead tr th {
                                 <h1 class="card-title text-white" id="online24">--</h1>
                             </div>
                             <div class="card-footer bg-light text-primary">
-                                Users Online <nobr>Last 24 Hours&nbsp;&nbsp;</nobr>
+                                Guests Online <nobr>Last 24 Hours&nbsp;&nbsp;</nobr>
                             </div>
                         </div>
                     </div>
@@ -112,7 +112,7 @@ table.table-fixed thead tr th {
             <div class="row pt-2" id="exports-section">
                 <div class="col-sm-10 offset-sm-2">
                     <div class="btn-group">
-                        <button type="button" id="export-visitors" data-days="30" class="export-btn btn btn-primary" disabled="true">Export Visitors Last <span id="visitor-days">30</span> Days</button>
+                        <button type="button" id="export-visitors" data-days="30" class="export-btn btn btn-primary" disabled="true">Export Guests Last <span id="visitor-days">30</span> Days</button>
                         <button type="button" class="export-btn btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled="true">
                             <span class="sr-only">Toggle Dropdown</span>
                         </button>
@@ -238,6 +238,11 @@ table.table-fixed thead tr th {
                     if (venue[0].town) addressString += venue[0].town + '\n';
                     $('#onlineNow').text(venue[0].users_online_now);
                     $('#online24').text(venue[0].users_online_24_hours);
+                    if (venue[0].hardware && venue[0].hardware.length) {
+                        console.log(venue[0].hardware);
+                        addressString += ('Hardware: '+venue[0].hardware[0].name + ' ('+venue[0].hardware[0].brand+')\n');
+                    }
+                    addressString += ('Status: '+venue[0].status + '\n');
                     var myCenter = new google.maps.LatLng(venue[0].latitude,venue[0].longitude);
                     var marker = new google.maps.Marker({position: myCenter, venueId:venue[0].id});
                     marker.setMap(map);
