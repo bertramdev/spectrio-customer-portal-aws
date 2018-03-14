@@ -5,7 +5,10 @@ provider:
   runtime: nodejs6.10
   stage: dev
   environment:
+    DYNAMODB_CUSTOMERS_TABLE: purple-${opt:stage, self:provider.stage}-customers
     DYNAMODB_VENUES_TABLE: purple-${opt:stage, self:provider.stage}-venues
+    DYNAMODB_VENUE_DAILY_TOTALS_TABLE: purple-${opt:stage, self:provider.stage}-venue-daily-totals
+    DYNAMODB_CUSTOMER_DAILY_TOTALS_TABLE: purple-${opt:stage, self:provider.stage}-customer-daily-totals
     DYNAMODB_VISITS_TABLE: purple-${opt:stage, self:provider.stage}-visits
     DYNAMODB_VISITORS_TABLE: purple-${opt:stage, self:provider.stage}-visitors
     REGION: us-east-1
@@ -20,7 +23,34 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_CUSTOMERS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VENUES_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_CUSTOMER_DAILY_TOTALS_TABLE}"
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -57,9 +87,53 @@ functions:
           path: purpleStore
           method: get
           cors: true
+  purpleAggregate:
+    handler: /handlers/aggregate.default
+    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregate
+    events:
+      - http:
+          path: purpleAggregate
+          method: get
+          cors: true
+  customer:
+    handler: /handlers/customer.default
+    name: ${self:service}-${opt:stage, self:provider.stage}-customer
+    events:
+      - http:
+          path: customer/{id}
+          method: get
+          cors: true
+      - http:
+          path: customer/{id}
+          method: post
+          cors: true
+      - http:
+          path: customer/{id}
+          method: put
+          cors: true
+      - http:
+          path: customer/{id}
+          method: delete
+          cors: true
 
 resources:
   Resources:
+    CustomersDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_CUSTOMERS_TABLE}
     VenuesDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain
@@ -90,6 +164,38 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.DYNAMODB_VENUES_TABLE}
+    VenueDailyTotalsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}
+    CustomerDailyTotalsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_CUSTOMER_DAILY_TOTALS_TABLE}
     VisitsDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain

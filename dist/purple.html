@@ -74,7 +74,7 @@ table.table-fixed thead tr th {
                     
                 </div>
                 <div class="col-sm-2">
-                    <button class="btn btn-primary" id="export-all" type="button" disabled="true">Export All</button>
+                    <button class="btn btn-primary venues-enabled" id="export-all" type="button" disabled="true">Export All</button>
                 </div>
             </div>
             <div class="form-group row" id="venues-section">
@@ -126,37 +126,62 @@ table.table-fixed thead tr th {
                     </div>                    
                 </div>
             </div>
-		<div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
-			<div class="modal-dialog modal-dialog-centered" role="document">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="exampleModalLongTitle">Login</h5>
-					</div>
-					<div class="modal-body">
-						<div id="login-error" class="alert alert-danger" role="alert" style="display:none"></div>
-						<form>
-							<div class="form-group row">
-								<label for="name" class="col-sm-2">Username</label>
-								<div class="col-sm-10">
-								<input class="form-control" name="username"/>
-								</div>
-							</div>
-							<div class="form-group row">
-								<label for="name" class="col-sm-2">Password</label>
-								<div class="col-sm-10">
-								<input class="form-control" type="password" name="password"/>
-								</div>
-							</div>
-						</form>						
-					</div>
-					<div class="modal-footer">
-						<button type="button" id="login-button" class="btn btn-primary">Login</button>
-					</div>
-				</div>
-			</div>
-		</div>
+            <div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLongTitle">Login</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div id="login-error" class="alert alert-danger" role="alert" style="display:none"></div>
+                            <form>
+                                <div class="form-group row">
+                                    <label for="name" class="col-sm-2">Username</label>
+                                    <div class="col-sm-10">
+                                    <input class="form-control" name="username"/>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="name" class="col-sm-2">Password</label>
+                                    <div class="col-sm-10">
+                                    <input class="form-control" type="password" name="password"/>
+                                    </div>
+                                </div>
+                            </form>						
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" id="login-button" class="btn btn-primary">Login</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ADMIN -->
+            <div class="row"><hr class="col-sm-12"/></div>
+            <div class="form-group row" id="store-section">
+                <label for="name" class="col-sm-2">Admin</label>
+                <div class="col-sm-10">
+                    <div class="btn-group">
+                        <button type="button" id="store-all" data-days="30" class="btn btn-warning venues-enabled" disabled="true">Store All Guests Last <span id="visitor-days2">30</span> Days</button>
+                        <button type="button" class="btn btn-warning dropdown-toggle dropdown-toggle-split venues-enabled" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled="true">
+                            <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item store-range" href="#" data-days="7">7 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="30">30 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="90">90 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="180">180 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="365">365 Days</a>
+                        </div>
+                    </div>
+                    <button class="btn btn-warning" type="button" id="store-venues">Store All Venues</button>                                         
+                    <button class="btn btn-warning" type="button" id="store-customers">Store Customers</button>                                         
+                </div>
+            </div>
+            <!-- END ADMIN -->
+        
 		<script>
-            var purpleProxy = 'https://pyhc0dlbjk.execute-api.us-east-1.amazonaws.com/dev/purpleProxy';
+            var proxyHost = 'pyhc0dlbjk.execute-api.us-east-1.amazonaws.com';
+            var purpleProxy = 'https:/'+proxyHost+'/dev/purpleProxy';
             var venues;
 			function getVenues() {
                 var path = '/api/company/v1/venues';
@@ -170,7 +195,7 @@ table.table-fixed thead tr th {
                             $.each(venues, function(idx, itm) {
                                 $('#venues-select').append('<option value="'+itm.id+'">'+itm.name+'</name>');
                             });
-                            $('#export-all').removeAttr('disabled');
+                            $('.venues-enabled').removeAttr('disabled');
                         }
 				    });
             }
@@ -190,10 +215,10 @@ table.table-fixed thead tr th {
                                 csv +=(itm.id+',"'+itm.first_name+'","'+(itm.last_name||'')+'","'+(itm.gender||'')+'","'+(itm.date_of_birth||'')+'","'+(itm.location||'')+'","'+(itm.email||'')+'","'+(itm.mobile||'')+'","'+(itm.first_seen||'')+'",'+itm.last_seen+','+itm.visits+',"'+itm.source+'"');
                                 csv += '\r\n';
                             });
-                            exportCSV(csv, 'visitors.csv');
+                            exportCSV(csv, 'guests.csv');
                         }
                         else {
-                            alert('No vistors found.');
+                            alert('No guests found.');
                         }
 				    });
             }
@@ -252,7 +277,8 @@ table.table-fixed thead tr th {
                 $('[name="address"]').val(addressString);        
                 $('.export-btn').removeAttr('disabled');       
             }
-			$(document).ready(function() {
+
+            $(document).ready(function() {
                 $('#venues-select').on('change', function(evt) {
                     var sel = $(this);
                     var matchId = parseInt(sel.val());
@@ -265,6 +291,11 @@ table.table-fixed thead tr th {
                     var days = $(this).data('days');
                     $('#export-visitors').data('days', days);
                     $('#visitor-days').text(days);
+                });
+                $('.store-range').on('click', function() {
+                    var days = $(this).data('days');
+                    $('#store-all').data('days', days);
+                    $('#visitor-days2').text(days);
                 });
                 $('#export-all').on('click', function() {
                     var csv = 'id,name,address1,address2,address3,address4,town,telephone,email,users_online_now,users_online_24_hours,status\r\n';
@@ -289,8 +320,74 @@ table.table-fixed thead tr th {
                         Cookies.set('loggedInX', 'false', {expires:1/24});
 					}
 				});
-			});
-		</script>
+            });
+        </script>
+        <script>
+            // ADMIN            
+            var purpleStore = 'https:/'+proxyHost+'/dev/purpleStore';
+            var customerURL = 'https:/'+proxyHost+'/dev/customer';
+			function storeCustomers() {
+                var customers = [
+                    {
+                        id: 4286,
+                        publicKey: 'ca722481fcff8361d4fe2ac3a476aba4',
+                        privateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3'
+                    }
+                ];
+                $.each(customers, function(idx, customer){
+                    $.ajax({
+                        contentType: "application/json; charset=utf-8",
+			            dataType: "json",
+                        url:customerURL + '/'+customer.id,
+                        type:'POST',
+                        data: JSON.stringify(customer)
+                    })
+				    .done(function(responseObj) {
+                        console.log(responseObj);
+				    });
+                });
+                alert('Done');
+            }
+            function storeAllVisitors() {
+                var range = parseInt($('#store-all').data('days'));
+                var s = moment().add(-1*range, 'days').format('YYYYMMDD');
+                console.log(s);
+                var e = moment().format('YYYYMMDD');
+                $.each(venues, function(idx, venue) {
+                    var p = '/api/company/v1/venue/'+venue.id+'/visitors?from='+s+'&to='+e;
+                    console.log(p);
+                    $.ajax(purpleStore + '?customerId=4286&dataField=visitors&path='+p)
+				    .done(function(responseObj) {
+                        console.log(responseObj);
+                    });
+                });
+                alert('Done!');
+            }
+            function storeVenues() {
+                var p = '/api/company/v1/venues';
+                $.ajax(purpleStore + '?customerId=4286&dataField=venues&path='+p)
+                .done(function(responseObj) {
+                    console.log(responseObj);
+                });
+                alert('Done!');
+            }
+
+            $(document).ready(function() {
+                // ADMIN
+                $('#store-all').on('click', function() {
+                    storeAllVisitors();
+                });
+                $('#store-venues').on('click', function() {
+                    storeVenues();
+                });
+                $('#store-customers').on('click', function() {
+                    storeCustomers();
+                });
+                // END ADMIN
+
+            });            
+            // END ADMIN               
+        </script>
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDs1ehZE1qyN6A-PvP1RuLxoXuQ35b2goA&callback=myMap"></script>        
     </body>
 

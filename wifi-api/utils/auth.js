@@ -14,6 +14,6 @@ module.exports.getAuthInfo = (publicKey, privateKey, path, now, postString) => {
 	console.log('\n'+hashString);
 	var hash = sha256.hmac(privateKey, hashString);
 	var header = publicKey+':'+hash;
-	return {header:header, hashString: hashString, portalDomain:portalDomain};
+	return {header:header, hashString: hashString, portalDomain:portalDomain, now:now};
 };
   
