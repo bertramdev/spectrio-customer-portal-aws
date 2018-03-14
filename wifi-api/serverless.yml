@@ -42,11 +42,19 @@ provider:
 
 functions:
   purpleProxy:
-    handler: handler.purpleProxy
+    handler: /handlers/proxy.default
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleProxy
     events:
       - http:
           path: purpleProxy
+          method: get
+          cors: true
+  purpleStore:
+    handler: /handlers/store.default
+    name: ${self:service}-${opt:stage, self:provider.stage}-purpleStore
+    events:
+      - http:
+          path: purpleStore
           method: get
           cors: true
 
@@ -60,10 +68,24 @@ resources:
           -
             AttributeName: id
             AttributeType: S
+          -
+            AttributeName: customerId
+            AttributeType: S
         KeySchema:
           -
             AttributeName: id
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.DYNAMODB_VENUES_TABLE}-customer-index
+            KeySchema:
+              -
+                AttributeName: customerId
+                KeyType: HASH
+            Projection:
+              ProjectionType: "ALL"
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1            
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
@@ -76,10 +98,24 @@ resources:
           -
             AttributeName: id
             AttributeType: S
+          -
+            AttributeName: customerId
+            AttributeType: S
         KeySchema:
           -
             AttributeName: id
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.DYNAMODB_VISITS_TABLE}-customer-index
+            KeySchema:
+              -
+                AttributeName: customerId
+                KeyType: HASH
+            Projection:
+              ProjectionType: "ALL"
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1            
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
@@ -92,10 +128,24 @@ resources:
           -
             AttributeName: id
             AttributeType: S
+          -
+            AttributeName: customerId
+            AttributeType: S
         KeySchema:
           -
             AttributeName: id
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.DYNAMODB_VISITORS_TABLE}-customer-index
+            KeySchema:
+              -
+                AttributeName: customerId
+                KeyType: HASH
+            Projection:
+              ProjectionType: "ALL"
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1            
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
