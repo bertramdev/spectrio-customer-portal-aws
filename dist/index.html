@@ -18,6 +18,14 @@
 			<img alt="Brand" height="60" src="https://www.spectrio.com/wp-content/uploads/2015/03/Spectrio_Logo2015_273x96.png"/>		
 			Portal POC
 		</a>
+		<ul class="navbar-nav ml-auto">
+			<li class="nav-item">
+				<a class="nav-link" href="admin.html">Admin</a>
+			</li>
+			<li class="nav-item">
+				<a id="logout" class="nav-link" href="#">Logout</a>
+			</li>
+		</ul>		
 		</nav>		
 
 		<div class="container-fluid">
@@ -93,6 +101,11 @@
 						$('#login-error').show();
                         Cookies.set('loggedInX', 'false', {expires:1/24});
 					}
+				});
+
+				$('#logout').on('click', function(evt) {
+					Cookies.set('loggedInX', 'false', {expires:1/(24*60*60)});
+					document.location.reload();
 				});
 			});
 		</script>

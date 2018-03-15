@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css"/>		
+		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>		<style>
+.table-fixed {
+	width: 100%;
+	border: 1px silver solid;
+}
+table.table-fixed tbody {
+	height:120px;
+	overflow-y:auto;
+	width: 100%;
+}
+table.table-fixed thead,tbody,tr,td,th{
+    display:block;
+}
+table.table-fixed tbody td {
+    float:left;
+}
+table.table-fixed thead tr th {
+	float:left;
+}
+.call-log-card {
+	text-align: center;
+}
+.call-log-row {
+	padding-bottom:15px;
+}
+.voicemail-button {
+	width:32px;
+	margin-right:2px;
+}
+		</style>
+	</head>
+	<body style="padding-top:105px">
+		<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
+		<a class="navbar-brand" href="#">
+			<img alt="Brand" height="60" src="https://www.spectrio.com/wp-content/uploads/2015/03/Spectrio_Logo2015_273x96.png"/>		
+			POC	Admin
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a id="logout" class="nav-link" href="#">Logout</a>
+                </li>
+            </ul>		
+        </div>
+		</nav>		
+
+		<div class="container-fluid">
+            <form>
+
+            <!-- ADMIN -->
+            <div class="form-group row" id="store-section">
+                <label for="name" class="col-sm-2">Admin</label>
+                <div class="col-sm-10">
+                    <button class="btn btn-warning" type="button" id="store-venues">Store All Wifi Venues</button>                                         
+                    <button class="btn btn-warning" type="button" id="store-customers">Store Customer Configurations</button>                                         
+                </div>
+            </div>
+            <div class="form-group row" id="store-section">
+                <label for="name" class="col-sm-2">Output</label>
+                <div class="col-sm-10">
+                    <pre id="output"></pre>
+                </div>
+            </div>
+                <!-- END ADMIN -->
+            </form>
+        </div>
+        <div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLongTitle">Login</h5>
+                    </div>
+                    <div class="modal-body">
+                        <div id="login-error" class="alert alert-danger" role="alert" style="display:none"></div>
+                        <form>
+                            <div class="form-group row">
+                                <label for="name" class="col-sm-2">Username</label>
+                                <div class="col-sm-10">
+                                <input class="form-control" name="username"/>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="name" class="col-sm-2">Password</label>
+                                <div class="col-sm-10">
+                                <input class="form-control" type="password" name="password"/>
+                                </div>
+                            </div>
+                        </form>						
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="login-button" class="btn btn-primary">Login</button>
+                    </div>
+                </div>
+            </div>
+        </div>        
+        <script>
+            // ADMIN
+            var proxyHost = 'pyhc0dlbjk.execute-api.us-east-1.amazonaws.com';
+            var purpleStore = 'https:/'+proxyHost+'/dev/purpleStore';
+            var customerURL = 'https:/'+proxyHost+'/dev/customer';
+			function storeCustomers() {
+                var customers = [
+                    {
+                        id: 1335221,
+                        customerName: 'LabCorp',
+                        phoneAccountId: 1335221,
+                        phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'
+					},
+                    {
+                        id: 4286,
+                        customerName: 'Spectrio',
+                        purpleAccountId: 4286,
+                        purplePublicKey: 'ca722481fcff8361d4fe2ac3a476aba4',
+                        purplePrivateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3',
+                        phoneAccountId: 74241,
+                        phoneApiToken: 'YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H'
+                    }
+                    
+                ];
+                $('#output').text('');
+
+                $.each(customers, function(idx, customer){
+                    $.ajax({
+                        contentType: "application/json; charset=utf-8",
+			            dataType: "json",
+                        url:customerURL + '/'+customer.id,
+                        method:'PUT',
+                        data: JSON.stringify(customer)
+                    })
+				    .done(function(responseObj) {
+                        console.log(responseObj);
+                        $('#output').text($('#output').text()+JSON.stringify(responseObj, null, 2)+'\n\n');
+
+				    });
+                });
+                //alert('Done');
+            }
+            function storeVenues() {
+                var p = '/api/company/v1/venues';
+                $.ajax(purpleStore + '?customerId=4286&dataField=venues&path='+p)
+                .done(function(responseObj) {
+                    console.log(responseObj);
+                    $('#output').text(JSON.stringify(responseObj, null, 2));
+                });
+                //alert('Done!');
+            }
+
+            $(document).ready(function() {
+                if (Cookies.get('loggedInX')!='true') {
+                    $('#loginModal').modal('show');
+                }
+
+                $('#store-venues').on('click', function() {
+                    storeVenues();
+                });
+                $('#store-customers').on('click', function() {
+                    storeCustomers();
+                });
+				$('#login-button').on('click', function() {
+					var b = eval(atob('YnRvYSgkKCdbbmFtZT0icGFzc3dvcmQiXScpLnZhbCgpKSA9PSAnTVRJelUzQmxZM1J5YVc4a0pBPT0nICYmIGJ0b2EoJCgnW25hbWU9InVzZXJuYW1lIl0nKS52YWwoKSkgPT0gJ1UzQmxZM1J5YVc4PSc='));
+					if (b)  {
+						$('#login-error').hide();
+						$('#loginModal').modal('hide');
+                        Cookies.set('loggedInX', 'true', {expires:1/24});
+					}
+					else {
+						$('#login-error').text('Invalid username or password');
+						$('#login-error').show();
+                        Cookies.set('loggedInX', 'false', {expires:1/24});
+					}
+				});
+				$('#logout').on('click', function(evt) {
+					Cookies.set('loggedInX', 'false', {expires:1/(24*60*60)});
+					document.location.reload();
+				});
+
+            });            
+            // END ADMIN               
+        </script>
+    </body>
+
+</html>

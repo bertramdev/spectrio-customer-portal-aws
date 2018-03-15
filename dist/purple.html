@@ -9,7 +9,6 @@
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>        
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>
-        <script src="../js/sha256.js"></script>
 		<style>
 .table-fixed {
 	width: 100%;
@@ -56,11 +55,15 @@ table.table-fixed thead tr th {
 				<li class="nav-item"><a class="nav-link" href="#venues-section">Venues</a></li>
 			</ul>
 			<ul class="navbar-nav ml-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html">Home</a>
-                    </li>
-                </ul>		
-            </div>
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a id="logout" class="nav-link" href="#">Logout</a>
+                </li>
+
+            </ul>		
+        </div>
 		</nav>		
 
 		<div class="container-fluid">
@@ -173,19 +176,21 @@ table.table-fixed thead tr th {
                             <a class="dropdown-item store-range" href="#" data-days="365">365 Days</a>
                         </div>
                     </div>
-                    <button class="btn btn-warning" type="button" id="store-venues">Store All Venues</button>                                         
-                    <button class="btn btn-warning" type="button" id="store-customers">Store Customers</button>                                         
                 </div>
             </div>
             <!-- END ADMIN -->
+        </div>
         
 		<script>
             var proxyHost = 'pyhc0dlbjk.execute-api.us-east-1.amazonaws.com';
+            var customerURL = 'https:/'+proxyHost+'/dev/customer';
             var purpleProxy = 'https:/'+proxyHost+'/dev/purpleProxy';
+            var accountId = 4286;
+            var customerId;
             var venues;
 			function getVenues() {
                 var path = '/api/company/v1/venues';
-                console.log(purpleProxy + '?path='+path);
+                console.log(purpleProxy + '?customerId='+ customerId+ '&path='+path);
 				$.ajax(purpleProxy + '?path='+path)
 				    .done(function(responseObj) {
                         console.log(responseObj);
@@ -200,7 +205,7 @@ table.table-fixed thead tr th {
 				    });
             }
 			function exportVisitors() {
-                var path = '/api/company/v1/venue/'+$('#venues-select').val()+'/visitors?';
+                var path = '/api/company/v1/venue/'+$('#venues-select').val()+'/visitors?customerId='+ customerId+ '&';
                 var days = parseInt($('#export-visitors').data('days'));
                 path += ('from='+moment().add(-1*days, 'days').format('YYYYMMDD'));
                 path += ('&to='+moment().format('YYYYMMDD'));
@@ -235,8 +240,21 @@ table.table-fixed thead tr th {
                     $('#loginModal').modal('show');
                 }
                 else {
-                    getVenues();
+                    init();
                 }
+            }
+
+            function init() {
+				$.ajax(customerURL+'/'+accountId)
+				.done(function(respObj) {
+					if (respObj && respObj.success) {
+                        customerId = respObj.data.purpleAccountId;
+                        getVenues();                        
+					}
+					else {
+						alert('Huge problem!');
+					}
+				});                
             }
 
             function exportCSV(csv, name) {
@@ -310,7 +328,7 @@ table.table-fixed thead tr th {
 					var b = eval(atob('YnRvYSgkKCdbbmFtZT0icGFzc3dvcmQiXScpLnZhbCgpKSA9PSAnTVRJelUzQmxZM1J5YVc4a0pBPT0nICYmIGJ0b2EoJCgnW25hbWU9InVzZXJuYW1lIl0nKS52YWwoKSkgPT0gJ1UzQmxZM1J5YVc4PSc='));
 					if (b)  {
 						$('#login-error').hide();
-						getVenues();
+						init();
 						$('#loginModal').modal('hide');
                         Cookies.set('loggedInX', 'true', {expires:1/24});
 					}
@@ -320,36 +338,17 @@ table.table-fixed thead tr th {
                         Cookies.set('loggedInX', 'false', {expires:1/24});
 					}
 				});
+				$('#logout').on('click', function(evt) {
+					Cookies.set('loggedInX', 'false', {expires:1/(24*60*60)});
+					document.location.reload();
+				});
+
             });
         </script>
         <script>
             // ADMIN            
             var purpleStore = 'https:/'+proxyHost+'/dev/purpleStore';
             var customerURL = 'https:/'+proxyHost+'/dev/customer';
-			function storeCustomers() {
-                var customers = [
-                    {
-                        id: 4286,
-                        customerName: 'Spectrio',
-                        purpleAccountId: 4286,
-                        purplePublicKey: 'ca722481fcff8361d4fe2ac3a476aba4',
-                        purplePrivateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3'
-                    }
-                ];
-                $.each(customers, function(idx, customer){
-                    $.ajax({
-                        contentType: "application/json; charset=utf-8",
-			            dataType: "json",
-                        url:customerURL + '/'+customer.id,
-                        method:'PUT',
-                        data: JSON.stringify(customer)
-                    })
-				    .done(function(responseObj) {
-                        console.log(responseObj);
-				    });
-                });
-                alert('Done');
-            }
             function storeAllVisitors() {
                 var range = parseInt($('#store-all').data('days'));
                 var s = moment().add(-1*range, 'days').format('YYYYMMDD');
@@ -365,24 +364,10 @@ table.table-fixed thead tr th {
                 });
                 alert('Done!');
             }
-            function storeVenues() {
-                var p = '/api/company/v1/venues';
-                $.ajax(purpleStore + '?customerId=4286&dataField=venues&path='+p)
-                .done(function(responseObj) {
-                    console.log(responseObj);
-                });
-                alert('Done!');
-            }
 
             $(document).ready(function() {
                 $('#store-all').on('click', function() {
                     storeAllVisitors();
-                });
-                $('#store-venues').on('click', function() {
-                    storeVenues();
-                });
-                $('#store-customers').on('click', function() {
-                    storeCustomers();
                 });
 
             });            

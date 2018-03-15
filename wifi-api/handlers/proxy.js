@@ -10,8 +10,21 @@ AWS.config.region = process.env.REGION;
 module.exports.default = (event, context, callback) => {
 	console.log(event);
 
-	var customerId = (event.queryStringParameters ? event.queryStringParameters.customerId : null) || '4286',
+	var customerId = (event.queryStringParameters ? event.queryStringParameters.customerId : null),
 		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
+	if (!customerId) {
+		const info = {
+			success:false,
+			message: 'Customer Id could not be found'
+		};
+		const output = {
+			success: false,
+			statusCode: 200,//error.status,
+			body: JSON.stringify(info)
+		};	
+		callback(null, output);
+		return;
+	}
 
 	const params = {
 		TableName: dynamoDbTable,

@@ -145,7 +145,11 @@ module.exports.default = (event, context, callback) => {
 					}
 					const output = {
 						statusCode: 200,
-						body: msg,
+						body: JSON.stringify({
+							statusCode: 200,
+							success:true,
+							message:msg
+						})
 					};	
 					callback(null, output);
 				})
