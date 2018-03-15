@@ -166,7 +166,17 @@ table.table-fixed thead tr th {
 					</div>
 				</div>
 			</div>
+			<!-- ADMIN -->
+			<div class="row"><hr class="col-sm-12"/></div>
+			<div class="form-group row" id="admin-section">
+				<label for="name" class="col-sm-2">Admin</label>
+				<div class="col-sm-10">
+					<button class="btn btn-warning" type="button" id="store-customers">Store Customers</button>                                         
+				</div>
+			</div>
+			<!-- END ADMIN -->
 			</form>
+
 		</div>
 		<div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
 			<div class="modal-dialog modal-dialog-centered" role="document">
@@ -198,13 +208,11 @@ table.table-fixed thead tr th {
 			</div>
 		</div>
 		<script>
-			//labcorp 2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw
-			//account 1335221
-			//spectrio YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H
-			//account 74241
-			var headers = { Authorization: 'Bearer 2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw' };
+            var proxyHost = 'pyhc0dlbjk.execute-api.us-east-1.amazonaws.com';
+            var customerURL = 'https:/'+proxyHost+'/dev/customer';
 			var accountId = 1335221;
 			var lastOffset = 0;
+			var headers;
 			function fetchVoiceMail(offset) {
 				offset = offset || 0;
 				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/voicemail?limit=50&sort[created_at]=desc&offset='+offset, {
@@ -265,7 +273,49 @@ table.table-fixed thead tr th {
 			}
 
 			function loadData() {
-                /*
+				$.ajax(customerURL+'/'+accountId)
+				.done(function(respObj) {
+					headers = { Authorization: 'Bearer '+respObj.data.phoneApiToken };
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(7,'d').unix()), {
+						headers: headers
+					})
+					.done(function(data) {
+						$('#7days').text(data.total);
+					});
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(1,'d').unix()), {
+						headers: headers
+					})
+					.done(function(data) {
+						$('#1day').text(data.total);
+					});
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(30,'d').unix()), {
+						headers: headers
+					})
+					.done(function(data) {
+						$('#30days').text(data.total);
+					});
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/phone-numbers?limit=300', {
+						headers: headers
+					})
+					.done(function(data) {
+						$.each(data.items, function(idx, itm) {
+							$('#phone-numbers-table>tbody').append($('<tr><td width="40%">'+itm.phone_number+'</td><td width="60%">'+itm.name+'</td></tr>'));						
+						});
+						$('#phonenumbers-total').text(data.total);
+					});
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/extensions?limit=300&sort[extension]=asc', {
+						headers: headers
+					})
+					.done(function(data) {
+						$.each(data.items, function(idx, itm) {
+							$('#extensions-table>tbody').append($('<tr><td width="10%">'+itm.extension+'</td><td width="30%"><nobr>'+itm.name+'</nobr></td><td width="25%">'+itm.caller_id+'</td><td width="10%">'+(itm.local_area_code || '')+'</td><td width="25%">'+itm.timezone+'</td></tr>'));						
+						});
+						$('#extensions-total').text(data.total);
+					});
+					fetchVoiceMail();
+				});
+
+				/*
 				$.ajax('https://api.phone.com/v4/accounts/'+accountId, {
 					headers: headers
 				})
@@ -274,43 +324,7 @@ table.table-fixed thead tr th {
 					$('[name=address]').val(data.billing_contact.name+'\n'+address.line_1+'\n'+address.line_2+'\n'+address.city+' '+address.province+' '+address.postal_code+'\n');
 				});
                 */
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(7,'d').unix()), {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#7days').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(1,'d').unix()), {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#1day').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(30,'d').unix()), {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#30days').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/phone-numbers?limit=300', {
-					headers: headers
-				})
-				.done(function(data) {
-					$.each(data.items, function(idx, itm) {
-						$('#phone-numbers-table>tbody').append($('<tr><td width="40%">'+itm.phone_number+'</td><td width="60%">'+itm.name+'</td></tr>'));						
-					});
-					$('#phonenumbers-total').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/extensions?limit=300&sort[extension]=asc', {
-					headers: headers
-				})
-				.done(function(data) {
-					$.each(data.items, function(idx, itm) {
-						$('#extensions-table>tbody').append($('<tr><td width="10%">'+itm.extension+'</td><td width="30%"><nobr>'+itm.name+'</nobr></td><td width="25%">'+itm.caller_id+'</td><td width="10%">'+(itm.local_area_code || '')+'</td><td width="25%">'+itm.timezone+'</td></tr>'));						
-					});
-					$('#extensions-total').text(data.total);
-				});
-				fetchVoiceMail();
+
 			}
 			$(document).ready(function() {
                 if (Cookies.get('loggedInX')!='true') {
@@ -349,6 +363,44 @@ table.table-fixed thead tr th {
 					}
 				});
 			});
+		</script>
+		<script>
+			function storeCustomers() {
+                var customers = [
+                    {
+                        id: 1335221,
+                        customerName: 'LabCorp',
+                        phoneAccountId: 1335221,
+                        phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'
+					},
+                    {
+                        id: 4286,
+                        customerName: 'Spectrio',
+                        phoneAccountId: 74241,
+                        phoneApiToken: 'YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H'
+                    }
+                ];
+                $.each(customers, function(idx, customer){
+                    $.ajax({
+                        contentType: "application/json; charset=utf-8",
+			            dataType: "json",
+                        url:customerURL + '/'+customer.id,
+                        method:'PUT',
+                        data: JSON.stringify(customer)
+                    })
+				    .done(function(responseObj) {
+                        console.log(responseObj);
+				    });
+                });
+                alert('Done');
+            }
+            $(document).ready(function() {
+                $('#store-customers').on('click', function() {
+                    storeCustomers();
+                });
+
+            });            
+
 		</script>
 	</body>
 

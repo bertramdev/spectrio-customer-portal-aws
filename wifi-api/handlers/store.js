@@ -57,11 +57,24 @@ module.exports.default = (event, context, callback) => {
 			});
 			return;
 		}
+		else if (!data.Item.purplePublicKey || !data.Item.purplePrivateKey) {
+			console.error(error);
+			var info = {
+				success: false,
+				statusCode:error.statusCode || 403, 
+				message: 'Customer is missing wifi access keys'
+			}
+			callback(null, {
+				statusCode: info.statusCode,
+				body: JSON.stringify(info)
+			});
+			return;
+		}
 		else {
 			var path = (event.queryStringParameters ? event.queryStringParameters.path : null) || '/api/company/v1/venues',
 				venueId = (event.queryStringParameters ? event.queryStringParameters.venueId : null),
-				publicKey = data.Item.publicKey, //'ca722481fcff8361d4fe2ac3a476aba4'
-				privateKey = data.Item.privateKey, //'fcc4780fc12bdf89e0bc81371e45d9b3',
+				publicKey = data.Item.purplePublicKey, //'ca722481fcff8361d4fe2ac3a476aba4'
+				privateKey = data.Item.purplePrivateKey, //'fcc4780fc12bdf89e0bc81371e45d9b3',
 				dataField = (event.queryStringParameters ? event.queryStringParameters.dataField : null) || 'venues',
 				now = new Date(),
 				authInfo = auth.getAuthInfo(publicKey, privateKey, path, now), 

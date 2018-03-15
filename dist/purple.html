@@ -330,8 +330,10 @@ table.table-fixed thead tr th {
                 var customers = [
                     {
                         id: 4286,
-                        publicKey: 'ca722481fcff8361d4fe2ac3a476aba4',
-                        privateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3'
+                        customerName: 'Spectrio',
+                        purpleAccountId: 4286,
+                        purplePublicKey: 'ca722481fcff8361d4fe2ac3a476aba4',
+                        purplePrivateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3'
                     }
                 ];
                 $.each(customers, function(idx, customer){
@@ -339,7 +341,7 @@ table.table-fixed thead tr th {
                         contentType: "application/json; charset=utf-8",
 			            dataType: "json",
                         url:customerURL + '/'+customer.id,
-                        type:'POST',
+                        method:'PUT',
                         data: JSON.stringify(customer)
                     })
 				    .done(function(responseObj) {
@@ -373,7 +375,6 @@ table.table-fixed thead tr th {
             }
 
             $(document).ready(function() {
-                // ADMIN
                 $('#store-all').on('click', function() {
                     storeAllVisitors();
                 });
@@ -383,7 +384,6 @@ table.table-fixed thead tr th {
                 $('#store-customers').on('click', function() {
                     storeCustomers();
                 });
-                // END ADMIN
 
             });            
             // END ADMIN               

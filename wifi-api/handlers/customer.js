@@ -11,12 +11,12 @@ module.exports.default = (event, context, callback) => {
         httpMethod = event.httpMethod,
 		dynamoDbTable = constants.DYNAMODB_TABLES.customers,
         now = new Date();
-    if (httpMethod == 'POST' || httpMethod == 'PUT') {
+    if (httpMethod == 'POST') {
         try {
             const item = JSON.parse(event.body.replace(/""/g, 'null'));                      
             item.id = customerId;
             item.lastUpdated = now.toString();
-            if (httpMethod == 'POST') item.active = true;
+            item.active = true;
             var params = {
                 TableName: dynamoDbTable,
                 Key: {
@@ -59,6 +59,70 @@ module.exports.default = (event, context, callback) => {
 			callback(null, output);
         }
     }
+    else if (httpMethod == 'PUT') {
+        try {
+            const item = JSON.parse(event.body.replace(/""/g, 'null'));                      
+            item.id = customerId;
+            item.lastUpdated = now.toString();
+            var params = {
+                TableName: dynamoDbTable,
+                Key: {
+                    id: customerId.toString()
+                },
+                ReturnValues:"UPDATED_NEW",
+                UpdateExpression: null,
+                ExpressionAttributeValues:{
+                }
+            };
+            for (var k1 in item) {
+                if (k1 != 'id') {
+                    if (!params.UpdateExpression) {
+                        params.UpdateExpression = 'set ';
+                    }
+                    else {
+                        params.UpdateExpression += ', ';
+                    }
+                    params.UpdateExpression += (k1 + ' = :'+k1+'Prm');
+                    params.ExpressionAttributeValues[':'+k1+'Prm'] = item[k1];    
+                }
+            }
+            console.log(params);
+            dynamoDb.update(params, (error, data) => {
+                var info = {};
+                if (error) {
+                    console.error(error);
+                    console.log('Could not update '+params.Key.id);
+                    info.statusCode = 400;
+                    info.success = false;
+                    info.message = 'Could not update '+params.Key.id;
+                    return;
+                }
+                else {
+                    info.success = true;
+                    info.statusCode = 200;
+                    info.message = 'Updated '+params.Key.id;
+                    console.log('Updated '+params.Key.id);
+                    info.data = data.Item; 
+                }
+                const output = {
+                    statusCode: info.statusCode,
+                    body: JSON.stringify(info),
+                };	
+                callback(null, output);
+            });
+        } catch(error) {
+            console.log(error);
+            var info = {
+                success: false,
+                message: error.toString()
+            };
+			const output = {
+				statusCode: 500,//error.status,
+				body: JSON.stringify(info)
+			};	
+			callback(null, output);
+        }
+    }
     else if (httpMethod == 'DELETE') {
         var item = {active:false};
         var params = {
@@ -66,9 +130,14 @@ module.exports.default = (event, context, callback) => {
             Key: {
                 id: customerId.toString()
             },
-            Item: item
+            AttributeUpdates: {
+                active: {
+                    Action: 'PUT',
+                    Value:true
+                }
+            }
         };
-        dynamoDb.put(params, (error) => {
+        dynamoDb.update(params, (error) => {
             var info = {};
             if (error) {
                 console.error(error);
@@ -112,10 +181,6 @@ module.exports.default = (event, context, callback) => {
               }
               callback(null, {
                 statusCode: info.statusCode,
-//                headers: { 
-//                  'Content-Type': 'text/plain',
-//                  "Access-Control-Allow-Origin" : "*" // Required for CORS support to work           
-//                },
                 body: JSON.stringify(info)
               });
               return;
@@ -127,15 +192,11 @@ module.exports.default = (event, context, callback) => {
                     data: data.Item
                 };
                   
-              const response = {
-                statusCode: info.statusCode,
- //               headers: { 
- //                 "Content-Type": "application/json; charset=utf-8",
- //                 "Access-Control-Allow-Origin" : "*" // Required for CORS support to work 
- //               },
-                body: JSON.stringify(info)
-              };
-              callback(null, response);        
+                const response = {
+                    statusCode: info.statusCode,
+                    body: JSON.stringify(info)
+                };
+                callback(null, response);        
             }
           });
     }
