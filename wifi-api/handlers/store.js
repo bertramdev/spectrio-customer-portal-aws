@@ -108,14 +108,15 @@ module.exports.default = (event, context, callback) => {
 				.set('X-API-Authorization', authInfo.header)
 				.then(function(res) {
 					console.log(res.body);
-					var msg = 'Venues not found',
+					var msg = dataField+' not found',
 						successCount = 0;
 					if (res.body && res.body.data && res.body.data[dataField]) {
 						var items = res.body.data[dataField];
 						for (var i = 0; i < items.length; i++) {
 							var item = items[i];
 							item.customerId = customerId;
-							item.id = item.id.toString();
+							item.externalId = item.id.toString();
+							item.id = customerId+'-'+item.externalId;
 							item.venueId = venueId;
 							for (var k in item) {
 								if (item[k] == '') item[k] = null;
@@ -132,7 +133,7 @@ module.exports.default = (event, context, callback) => {
 								// handle potential errors
 								if (error) {
 									console.error(error);
-									console.log('Could not save '+iparams.Key.id);
+									console.log('Could not save '+params.Key.id);
 									return;
 								}
 								else {

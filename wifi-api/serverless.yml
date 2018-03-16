@@ -4,6 +4,7 @@ provider:
   name: aws
   runtime: nodejs6.10
   stage: dev
+  #timeout: 30 # optional, in seconds, default is 6
   environment:
     DYNAMODB_CUSTOMERS_TABLE: purple-${opt:stage, self:provider.stage}-customers
     DYNAMODB_VENUES_TABLE: purple-${opt:stage, self:provider.stage}-venues
@@ -36,12 +37,20 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:Query
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VENUES_TABLE}/index/${self:provider.environment.DYNAMODB_VENUES_TABLE}-customer-index"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}/index/${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}-customer-index"
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -63,12 +72,20 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:Query
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VISITS_TABLE}/index/${self:provider.environment.DYNAMODB_VISITS_TABLE}-customer-index"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VISITORS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VISITORS_TABLE}/index/${self:provider.environment.DYNAMODB_VISITORS_TABLE}-customer-index"
 
 functions:
   purpleProxy:
@@ -87,12 +104,13 @@ functions:
           path: purpleStore
           method: get
           cors: true
-  purpleAggregate:
-    handler: /handlers/aggregate.default
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregate
+  purpleAggregateCustomerVisitors:
+    handler: /handlers/aggregate.customerVenuesDailyTotals
+    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateCustomerVisitors
+    timeout: 30
     events:
       - http:
-          path: purpleAggregate
+          path: purpleAggregateCustomerVisitors
           method: get
           cors: true
   customer:
@@ -172,10 +190,24 @@ resources:
           -
             AttributeName: id
             AttributeType: S
+          -
+            AttributeName: customerId
+            AttributeType: S
         KeySchema:
           -
             AttributeName: id
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}-customer-index
+            KeySchema:
+              -
+                AttributeName: customerId
+                KeyType: HASH
+            Projection:
+              ProjectionType: "ALL"
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1            
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

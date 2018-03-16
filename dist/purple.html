@@ -191,7 +191,7 @@ table.table-fixed thead tr th {
 			function getVenues() {
                 var path = '/api/company/v1/venues';
                 console.log(purpleProxy + '?customerId='+ customerId+ '&path='+path);
-				$.ajax(purpleProxy + '?path='+path)
+				$.ajax(purpleProxy + '?customerId='+ customerId+ '&path='+path)
 				    .done(function(responseObj) {
                         console.log(responseObj);
                         if (responseObj.success && responseObj.data.venues) {
