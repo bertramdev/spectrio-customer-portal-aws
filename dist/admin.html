@@ -69,7 +69,24 @@ table.table-fixed thead tr th {
                 <label for="name" class="col-sm-2">Admin</label>
                 <div class="col-sm-10">
                     <button class="btn btn-warning" type="button" id="store-venues">Store All Wifi Venues</button>                                         
-                    <button class="btn btn-warning" type="button" id="store-customers">Store Customer Configurations</button>                                         
+                    <button class="btn btn-warning" type="button" id="store-customers">Store Customer Configurations</button>
+                    <div class="btn-group">
+                        <button type="button" id="store-all" data-days="30" class="btn btn-warning">Aggregate Guests Last <span id="visitor-days2">30</span> Days</button>
+                        <button type="button" class="btn btn-warning dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item store-range" href="#" data-days="7">7 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="14">14 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="30">30 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="45">45 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="60">60 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="90">90 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="120">120 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="180">180 Days</a>
+                            <a class="dropdown-item store-range" href="#" data-days="365">365 Days</a>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="form-group row" id="store-section">
@@ -112,7 +129,9 @@ table.table-fixed thead tr th {
         </div>        
         <script>
             // ADMIN
-            var proxyHost = 'pyhc0dlbjk.execute-api.us-east-1.amazonaws.com';
+            // https://mnk2ecc85j.execute-api.us-east-1.amazonaws.com/dev/purpleProxy
+            var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
+            var purpleAggregate = 'https:/'+proxyHost+'/dev/purpleAggregateVenueVisitors';
             var purpleStore = 'https:/'+proxyHost+'/dev/purpleStore';
             var customerURL = 'https:/'+proxyHost+'/dev/customer';
 			function storeCustomers() {
@@ -161,11 +180,50 @@ table.table-fixed thead tr th {
                 });
                 //alert('Done!');
             }
+            function requestAggs(s, e) {
+                let now = new Date();
+                if(s.isBefore(now)) {
+                    var q = '&from='+s.format('YYYYMMDD')+'&to='+e.format('YYYYMMDD');
+                    console.log(q);
+                    $.ajax(purpleAggregate + '?customerId=4286'+q)
+				    .done(function(responseObj) {
+                        console.log(responseObj);
+                        let o = $('#output').text();
+                        o += (JSON.stringify(responseObj, null, 2)+'\n');
+                        $('#output').text(o);
+                        s.add(2, 'days');
+                        e.add(2, 'days');
+                        requestAggs(s, e);
+                    });
+                }
+                else {
+                    alert('Done');
+                }
+                
+            }
 
+            function aggregateVisitors() {
+                var range = parseInt($('#store-all').data('days'));
+                var now = new Date();
+                var s = moment().add(-1*range, 'days');
+                var e = moment(s).add(1, 'days');
+                var o = '';
+                $('#output').text(null);
+                requestAggs(s, e);
+
+            }
             $(document).ready(function() {
                 if (Cookies.get('loggedInX')!='true') {
                     $('#loginModal').modal('show');
                 }
+                $('.store-range').on('click', function() {
+                    var days = $(this).data('days');
+                    $('#store-all').data('days', days);
+                    $('#visitor-days2').text(days);
+                });
+                $('#store-all').on('click', function() {
+                    aggregateVisitors();
+                });
 
                 $('#store-venues').on('click', function() {
                     storeVenues();

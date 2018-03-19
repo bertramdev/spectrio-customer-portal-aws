@@ -54,6 +54,10 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:Query
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}/index/${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}-customer-venue-index"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:PutItem
@@ -105,12 +109,21 @@ functions:
           method: get
           cors: true
   purpleAggregateCustomerVisitors:
-    handler: /handlers/aggregate.customerVenuesDailyTotals
+    handler: /handlers/aggregate.calculateVenuesDailyTotals
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateCustomerVisitors
-    timeout: 30
+    timeout: 45
     events:
       - http:
-          path: purpleAggregateCustomerVisitors
+          path: purpleAggregateVenueVisitors
+          method: get
+          cors: true
+  purpleFetchVenueDailyTotals:
+    handler: /handlers/aggregate.fetchVenueDailyTotals
+    name: ${self:service}-${opt:stage, self:provider.stage}-purpleFetchVenueDailyTotals
+    timeout: 10
+    events:
+      - http:
+          path: purpleFetchVenueDailyTotals
           method: get
           cors: true
   customer:
@@ -193,6 +206,12 @@ resources:
           -
             AttributeName: customerId
             AttributeType: S
+          -
+            AttributeName: customerVenueId
+            AttributeType: S
+          -
+            AttributeName: date
+            AttributeType: S
         KeySchema:
           -
             AttributeName: id
@@ -203,6 +222,22 @@ resources:
               -
                 AttributeName: customerId
                 KeyType: HASH
+              -
+                AttributeName: date
+                KeyType: RANGE
+            Projection:
+              ProjectionType: "ALL"
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1            
+          - IndexName: ${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}-customer-venue-index
+            KeySchema:
+              -
+                AttributeName: customerVenueId
+                KeyType: HASH
+              -
+                AttributeName: date
+                KeyType: RANGE
             Projection:
               ProjectionType: "ALL"
             ProvisionedThroughput:

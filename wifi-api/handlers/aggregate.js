@@ -11,6 +11,7 @@ function getDailyInfo(customerId, externalId, fromString2, name) {
 	return {
 		id: customerId+'-'+externalId+'-'+fromString2,
 		customerId: customerId,
+		customerVenueId: customerId+'-'+externalId,
 		name: name,
 		externalId: externalId,
 		date: fromString2,
@@ -19,28 +20,95 @@ function getDailyInfo(customerId, externalId, fromString2, name) {
 		genderCaptured: 0,
 		ageCaptured: 0,
 		sourceCaptured: 0,
-		age0to17:0,
-		age18to34:0,
-		age35to49:0,
-		age50to70:0,
-		ageOver70:0,
-		male: 0,
-		female: 0
+		source: {},
+		age: {
+			age0to17:0,
+			age18to34:0,
+			age35to49:0,
+			age50to70:0,
+			ageOver70:0
+		},
+		gender: {
+			male: 0,
+			female: 0
+		}
 	};
 }
 
-function getCallbackBody(success, statusCode, message) {
+function getCallbackBody(success, statusCode, message, data) {
 	return {
 		statusCode: statusCode,
 		body: JSON.stringify({
 			success: success,
 			statusCode:statusCode, 
-			message: message
+			message: message,
+			data: (data||null)
 		})
 	};
 }
 
-module.exports.customerVenuesDailyTotals = (event, context, callback) => {
+module.exports.fetchVenueDailyTotals = (event, context, callback) => {
+	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null,
+		venueId = event.queryStringParameters ? event.queryStringParameters.venueId : null,
+		fromPrm = (event.queryStringParameters ? event.queryStringParameters.from : null),
+		toPrm = (event.queryStringParameters ? event.queryStringParameters.to : null),
+		includeDays = (event.queryStringParameters ? event.queryStringParameters.includeDays : null) == 'true',
+		fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment().add(-7, 'days'),
+		toDate = toPrm ? moment(toPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now),
+		fromQPrm = fromDate.format('YYYY-MM-DD'),
+		toQPrm = toDate.format('YYYY-MM-DD'),
+		dynamoDbTable = constants.DYNAMODB_TABLES.venueDailyTotals;
+	if (!customerId) {
+		callback(null, getCallbackBody(false, 400, 'Customer id missing'));
+		return;
+	}
+	if (!venueId) {
+		callback(null, getCallbackBody(false, 400, 'Venue id missing'));
+		return;
+	}
+	const dailyTotalsParams = {
+		TableName : dynamoDbTable,
+		IndexName: dynamoDbTable+'-customer-venue-index',
+		KeyConditionExpression: "#cvId = :customerVenueId and #d between :fromQPrm and :toQPrm",
+		ExpressionAttributeNames: { "#d":"date","#cvId":"customerVenueId" },		
+		ExpressionAttributeValues: { ":customerVenueId":(customerId+'-'+venueId), ":fromQPrm":fromQPrm, ":toQPrm":toQPrm }
+	}; 
+	console.log(dailyTotalsParams);
+	// being aync db query
+	dynamoDb.query(dailyTotalsParams, function(err, data) {
+		if (err) {
+			console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+		} else {
+			let outputData = getDailyInfo(customerId, venueId, fromQPrm, null);
+			outputData.startDate = fromQPrm;
+			outputData.endDate = toQPrm;
+			delete outputData.date;
+			data.Items.forEach(function(item) {
+				outputData.name = item.name;
+				for (let k in item) {
+					let v = item[k];
+					if (k != 'id' && k != 'customerId' &&
+						k != 'customerVenueId' && k != 'name' &&
+						k != 'externalId' && k != 'date' &&
+						Number.isInteger(v)
+					) {
+						outputData[k] = outputData[k] || 0;
+						outputData[k] += v;
+					}
+					else if (k == 'gender' || k == 'age' || k == 'source') {
+						for (let k1 in item[k]) {
+							outputData[k][k1] = outputData[k][k1] || 0;
+							outputData[k][k1] += item[k][k1];
+						}
+					}
+				}
+			});
+			if (includeDays) outputData.days = data.Items;
+			callback(null, getCallbackBody(true, 200, 'Daily totals between '+fromDate.toString() + ' and '+toDate.toString(), outputData));
+		}
+	});
+}
+module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 	console.log(event);
 	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null,
 		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
@@ -125,26 +193,26 @@ module.exports.customerVenuesDailyTotals = (event, context, callback) => {
 											dailyTotals = getDailyInfo(customerId, externalId, fromString2, name);
 										dailyTotals.visitors = visitors.length;
 										visitors.forEach (function(visitor, i) {
-											if (visitor.visits) dailyTotals.visits += visitor.visits;
+											if (visitor.visits) dailyTotals.visits += parseInt(visitor.visits);
 											['gender', 'source'].forEach((fld)=>{
 												if (visitor[fld]) {
 													let fldVal  = visitor[fld];
 													fldVal = fldVal == 'M' ? 'male' : fldVal; // stupid decoding gender
 													fldVal = fldVal == 'F' ? 'female' : fldVal;
 													dailyTotals[fld+'Captured']++;
-													dailyTotals[fldVal] = dailyTotals[fldVal] || 0;
-													dailyTotals[fldVal]++;
+													dailyTotals[fld][fldVal] = dailyTotals[fld][fldVal] || 0;
+													dailyTotals[fld][fldVal]++;
 												}
 											});
 											if (visitor.date_of_birth) {
 												try {
 													let birth = moment(visitor.date_of_birth);
 													dailyTotals['ageCaptured']++;
-													if (birth.isAfter(constants.MOMENTS.age18Birth)) dailyTotals.age0to17++;
-													else if (birth.isAfter(constants.MOMENTS.age35Birth)) dailyTotals.age18to34++;
-													else if (birth.isAfter(constants.MOMENTS.age50Birth)) dailyTotals.age35to49++;
-													else if (birth.isAfter(constants.MOMENTS.age70Birth)) dailyTotals.age50to70++;
-													else dailyTotals.ageOver70++;
+													if (birth.isAfter(constants.MOMENTS.age18Birth)) dailyTotals.age.age0to17++;
+													else if (birth.isAfter(constants.MOMENTS.age35Birth)) dailyTotals.age.age18to34++;
+													else if (birth.isAfter(constants.MOMENTS.age50Birth)) dailyTotals.age.age35to49++;
+													else if (birth.isAfter(constants.MOMENTS.age70Birth)) dailyTotals.age.age50to70++;
+													else dailyTotals.age.ageOver70++;
 												}
 												catch (e) {
 													console.log(e);
