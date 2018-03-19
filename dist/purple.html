@@ -9,6 +9,8 @@
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>        
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        
 		<style>
 .table-fixed {
 	width: 100%;
@@ -80,6 +82,9 @@ table.table-fixed thead tr th {
                     <button class="btn btn-primary venues-enabled" id="export-all" type="button" disabled="true">Export All</button>
                 </div>
             </div>
+
+            <div id="venue-detail" style="display:none">
+
             <div class="form-group row" id="venues-section">
                 <label for="phoneNumbers" class="col-sm-2">Details</label>
                 <div class="col-sm-5">
@@ -112,23 +117,77 @@ table.table-fixed thead tr th {
                     </div>
                 </div>		
             </div>
-            <div class="row pt-2" id="exports-section">
-                <div class="col-sm-10 offset-sm-2">
-                    <div class="btn-group">
-                        <button type="button" id="export-visitors" data-days="30" class="export-btn btn btn-primary" disabled="true">Export Guests Last <span id="visitor-days">30</span> Days</button>
-                        <button type="button" class="export-btn btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled="true">
-                            <span class="sr-only">Toggle Dropdown</span>
-                        </button>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item visitors-range" href="#" data-days="7">7 Days</a>
-                            <a class="dropdown-item visitors-range" href="#" data-days="30">30 Days</a>
-                            <a class="dropdown-item visitors-range" href="#" data-days="90">90 Days</a>
-                            <a class="dropdown-item visitors-range" href="#" data-days="180">180 Days</a>
-                            <a class="dropdown-item visitors-range" href="#" data-days="365">365 Days</a>
+            <div class="row pb-2 pt-2" id="agg-section">
+                <label for="" class="col-sm-2">Analytics</label>
+                <div class="col-sm-10">
+                    <div style="text-align:center" class="pb-1">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons" id="agg-days">
+                        <label class="btn btn-secondary">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days1" autocomplete="off" value="1"> 1 day
+                        </label>
+                        <label class="btn btn-secondary">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days7" autocomplete="off" value="7"> 7 days
+                        </label>
+                        <label class="btn btn-secondary  active">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days30" autocomplete="off" checked="true" value="30"> 30 days
+                        </label>
+                        <label class="btn btn-secondary">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days90" autocomplete="off" value="90"> 90 days
+                        </label>
+                        <label class="btn btn-secondary">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days180" autocomplete="off" value="180"> 180 days
+                        </label>
+                        <label class="btn btn-secondary">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days365" autocomplete="off" value="365"> 365 days
+                        </label>
+    
+                    </div>
+                    </div>
+                    <div class="card-deck">
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                 Total Guests
+                            </div>
+                            <div class="card-body text-center pt-2">
+                                <span id="visitors" style="font-size:180px; fount-weight:1200;">--</span>
+                                <br/>
+                                <button type="button" id="export-visitors" class="export-btn btn btn-primary btn-sm" disabled="true">Export Guests</button>
+                            </div>
                         </div>
-                    </div>                    
-                </div>
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                <span id="sources">--</span> Login Sources Captured
+                            </div>
+                            <div class="card-body">
+                                <div id="source-pie" style="width: 100%; height: 300px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>		
             </div>
+            <div class="row pb-2" id="agg-section">
+                <div class="col-sm-10 offset-sm-2">
+                    <div class="card-deck">
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                <span id="gender">--</span> Genders Captured
+                            </div>
+                            <div class="card-body">
+                                <div id="gender-pie" style="width: 100%; height: 300px;"></div>
+                            </div>
+                        </div>
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                <span id="age">--</span> Ages Captured
+                            </div>
+                            <div class="card-body">
+                                <div id="age-pie" style="width: 100%; height: 300px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>		
+            </div>
+            </div>            
             <div class="modal fade" data-backdrop="static" id="loginModal" tabindex="-1" role="dialog">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
@@ -185,6 +244,7 @@ table.table-fixed thead tr th {
             var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
             var customerURL = 'https:/'+proxyHost+'/dev/customer';
             var purpleProxy = 'https:/'+proxyHost+'/dev/purpleProxy';
+            var purpleFetchAggs = 'https:/'+proxyHost+'/dev/purpleFetchVenueDailyTotals';
             var accountId = 4286;
             var customerId;
             var venues;
@@ -205,12 +265,13 @@ table.table-fixed thead tr th {
 				    });
             }
 			function exportVisitors() {
-                var path = '/api/company/v1/venue/'+$('#venues-select').val()+'/visitors?customerId='+ customerId+ '&';
-                var days = parseInt($('#export-visitors').data('days'));
+                var path = '/api/company/v1/venue/'+$('#venues-select').val()+'/visitors?';
+                let days = parseInt($('[name="agg-days"]:checked').val());
+
                 path += ('from='+moment().add(-1*days, 'days').format('YYYYMMDD'));
                 path += ('&to='+moment().format('YYYYMMDD'));
                 console.log(purpleProxy + '?path='+path);
-				$.ajax(purpleProxy + '?path='+path)
+				$.ajax(purpleProxy + '?customerId='+ customerId+ '&path='+encodeURIComponent(path))
 				    .done(function(responseObj) {
                         console.log(responseObj);
                         if (responseObj.success && responseObj.data.visitors) {
@@ -268,6 +329,54 @@ table.table-fixed thead tr th {
                 document.body.removeChild(link);               
             }
 
+            function loadAnalytics(matchId) {
+                let days = parseInt($('[name="agg-days"]:checked').val()),
+                    to  = moment(),
+                    from = moment().add(-1*days, 'days');
+                let fromP = from.format('YYYYMMDD'),
+                    toP = to.format('YYYYMMDD');
+                let aggUrl = purpleFetchAggs + '?customerId='+customerId+'&venueId='+matchId+'&from='+fromP+'&to='+toP;
+                $.ajax(aggUrl)
+                .done(function(responseObj) {
+                    console.log(responseObj);
+                    if (responseObj.success && responseObj.data) {
+                        $('#sources').text(responseObj.data.sourceCaptured);
+                        $('#age').text(responseObj.data.ageCaptured);
+                        $('#visitors').text(responseObj.data.visitors);
+                        $('#gender').text(responseObj.data.genderCaptured);
+
+                        var data = [['Gender', 'Count']];
+                        for (let k in responseObj.data.gender) {
+                            data.push([k.substr(0,1).toUpperCase()+k.substr(1), responseObj.data.gender[k]]);
+                        }
+                        console.log(data);
+                        let chart = new google.visualization.PieChart(document.getElementById('gender-pie'));
+                        chart.draw(google.visualization.arrayToDataTable(data));
+
+                        let ageData = [['Age', 'Count']];
+                        for (let k in responseObj.data.age) {
+                            ageData.push([k.replace('age','').replace('to', ' to ').replace('Over', 'Over '), responseObj.data.age[k]]);
+                        }
+                        console.log(ageData);
+                        let ageChart = new google.visualization.PieChart(document.getElementById('age-pie'));
+                        ageChart.draw(google.visualization.arrayToDataTable(ageData));
+
+                        var sourceData = [['Source', 'Count']];
+                        for (let k in responseObj.data.source) {
+                            sourceData.push([k.substr(0,1).toUpperCase()+k.substr(1), responseObj.data.source[k]]);
+                        }
+                        console.log(data);
+                        let sourceChart = new google.visualization.PieChart(document.getElementById('source-pie'));
+                        sourceChart.draw(google.visualization.arrayToDataTable(sourceData));
+
+                    }
+                    else {
+                        alert('No guests found.');
+                    }
+                });
+                
+            }
+
             function selectVenue(matchId) {
                 var venue = $.grep(venues, function(itm, idx) {
                     return itm.id == matchId;
@@ -290,7 +399,8 @@ table.table-fixed thead tr th {
                     var marker = new google.maps.Marker({position: myCenter, venueId:venue[0].id});
                     marker.setMap(map);
                     map.setCenter(myCenter);
-                    
+                    // /dev/purpleFetchVenueDailyTotals?customerId=4286&venueId=12427&from=20180101&to=20180328
+                    loadAnalytics(matchId);                    
                 }
                 $('[name="address"]').val(addressString);        
                 $('.export-btn').removeAttr('disabled');       
@@ -300,15 +410,23 @@ table.table-fixed thead tr th {
                 $('#venues-select').on('change', function(evt) {
                     var sel = $(this);
                     var matchId = parseInt(sel.val());
-                    selectVenue(matchId);
+                    if (matchId > 0) {
+                        $('#venue-detail').show();
+                        selectVenue(matchId);
+                    }
+                    else {
+                        $('#venue-detail').hide();
+
+                    }
+
+                });
+                $('[name="agg-days"]').on('change', function() {
+                    let matchId = $('#venues-select').val();
+                    loadAnalytics(matchId);
+
                 });
                 $('#export-visitors').on('click', function() {
                     exportVisitors();
-                });
-                $('.visitors-range').on('click', function() {
-                    var days = $(this).data('days');
-                    $('#export-visitors').data('days', days);
-                    $('#visitor-days').text(days);
                 });
                 $('.store-range').on('click', function() {
                     var days = $(this).data('days');
@@ -372,6 +490,9 @@ table.table-fixed thead tr th {
 
             });            
             // END ADMIN               
+        </script>
+        <script type="text/javascript">
+        google.charts.load('current', {'packages':['corechart']});
         </script>
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDs1ehZE1qyN6A-PvP1RuLxoXuQ35b2goA&callback=myMap"></script>        
     </body>
