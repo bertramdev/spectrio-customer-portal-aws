@@ -35,7 +35,8 @@ table.table-fixed thead tr th {
 	padding-bottom:15px;
 }
 .voicemail-button {
-	width:32px;
+	width:23px;
+	padding:1px;
 	margin-right:2px;
 }
 		</style>
@@ -59,10 +60,10 @@ table.table-fixed thead tr th {
 			</ul>
 			<ul class="navbar-nav ml-auto">
 				<li class="nav-item">
-					<a class="nav-link" href="index.html">Home</a>
+					<a class="nav-link small" href="index.html">Home</a>
 				</li>
                 <li class="nav-item">
-                    <a id="logout" class="nav-link" href="#">Logout</a>
+                    <a id="logout small" class="nav-link" href="#">Logout</a>
                 </li>
 			</ul>		
 		</div>
@@ -112,8 +113,8 @@ table.table-fixed thead tr th {
 				<div class="col-sm-10">
 					<table class="table table-fixed table-sm" id="phone-numbers-table">
 						<thead>
-							<th scope="col" width="40%">Phone Number</th>
-							<th scope="col" width="60%">Name</th>
+							<th scope="col" width="40%" class="small"><nobr>Number</nobr></th>
+							<th scope="col" width="60%" class="small">Name</th>
 						</thead>
 						<tbody></tbody>
 					</table>
@@ -126,11 +127,8 @@ table.table-fixed thead tr th {
                     <div class="table-responsive">
 					<table class="table table-fixed table-sm" id="extensions-table">
 						<thead>
-							<th scope="col" width="10%">Extension</th>
-							<th scope="col" width="30%">Name</th>
-							<th scope="col" width="25%"><nobr>Caller Id</nobr></th>
-							<th scope="col" width="10%" style="overflow:hidden"><nobr>Area Code</nobr></th>
-							<th scope="col" width="25%">Time Zone</th>
+							<th scope="col" width="40%" class="small">Extension</th>
+							<th scope="col" width="60%" class="small">Name</th>
 						</thead>
 						<tbody></tbody>
                     </table>
@@ -144,12 +142,9 @@ table.table-fixed thead tr th {
                     <div class="table-responsive">
                     <table class="table table-fixed table-sm table-striped" id="voicemail-table">
 						<thead>
-							<th scope="col" width="20%">Date/Time</th>
-							<th scope="col" width="15%"><nobr>Phone Number</nobr></th>
-							<th scope="col" width="15%">Extension</th>
-							<th scope="col" width="20%">Name</th>
-							<th scope="col" width="20%">Duration</th>
-							<th scope="col" width="10%">&nbsp;</th>
+							<th scope="col" width="35%" class="small">Date/Time</th>
+							<th scope="col" width="40%" class="small"><nobr>To/From</nobr></th>
+							<th scope="col" width="25%" class="small">&nbsp;</th>
 						</thead>
 						<tbody></tbody>
                     </table>
@@ -215,7 +210,10 @@ table.table-fixed thead tr th {
 				.done(function(data) {
 					$('#voicemail-table>tbody').empty();
 					$.each(data.items, function(idx, itm) {
-						$('#voicemail-table>tbody').append($('<tr><td width="20%">'+moment(itm.created_at*1000).format('MM/DD/YY hh:mm a')+'</td><td width="15%">'+itm.to+'</td><td width="15%">'+itm.extension.extension+'</td><td width="20%"><nobr>'+itm.extension.name+'</nobr></td><td width="20%">'+itm.duration+' sec</td><td width="10%" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play"></span></button><button type="button" class="btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
+						$('#voicemail-table>tbody').append($('<tr><td width="35%" class="small" style="overflow:hidden;"><nobr>'+moment(itm.created_at*1000).format('M/D/YY h:mm a')+'</nobr></td>'+
+							'<td width="50%" class="small" style="overflow:hidden;"><nobr>'+itm.to+' '+itm.extension.extension+'</nobr><br/><nobr>'+itm.from.name+'</nobr><br/><nobr>'+itm.from.number+' ('+itm.from.city+', '+itm.from.state+')</nobr></td>'+
+							'<td width="15%" class="small" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play" title="'+itm.duration+' seconds" ></span></button>'+
+							'<button type="button" class="btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
 					});
 					$('#page-info').text((offset+1) +' - '+ Math.min(offset+50, data.total) +' of '+data.total);
 					lastOffset = offset;
@@ -294,7 +292,7 @@ table.table-fixed thead tr th {
 						})
 						.done(function(data) {
 							$.each(data.items, function(idx, itm) {
-								$('#phone-numbers-table>tbody').append($('<tr><td width="40%">'+itm.phone_number+'</td><td width="60%">'+itm.name+'</td></tr>'));						
+								$('#phone-numbers-table>tbody').append($('<tr><td width="40%" class="small">'+itm.phone_number+'</td><td width="60%" class="small">'+itm.name+'</td></tr>'));						
 							});
 							$('#phonenumbers-total').text(data.total);
 						});
@@ -303,7 +301,7 @@ table.table-fixed thead tr th {
 						})
 						.done(function(data) {
 							$.each(data.items, function(idx, itm) {
-								$('#extensions-table>tbody').append($('<tr><td width="10%">'+itm.extension+'</td><td width="30%"><nobr>'+itm.name+'</nobr></td><td width="25%">'+itm.caller_id+'</td><td width="10%">'+(itm.local_area_code || '')+'</td><td width="25%">'+itm.timezone+'</td></tr>'));						
+								$('#extensions-table>tbody').append($('<tr><td width="40%" class="small">'+itm.extension+'</td><td width="60%" class="small"><nobr>'+itm.name+'</nobr></td></tr>'));						
 							});
 							$('#extensions-total').text(data.total);
 						});

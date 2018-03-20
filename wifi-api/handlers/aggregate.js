@@ -1,6 +1,7 @@
 'use strict';
 const auth = require("../utils/auth");
 const constants = require("../utils/constants");
+const util = require("../utils/util");
 const moment = require('moment');
 const req = require('superagent');
 const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
@@ -38,6 +39,10 @@ function getDailyInfo(customerId, externalId, fromString2, name) {
 function getCallbackBody(success, statusCode, message, data) {
 	return {
 		statusCode: statusCode,
+		headers: {
+			"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+			"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+		},
 		body: JSON.stringify({
 			success: success,
 			statusCode:statusCode, 
@@ -59,11 +64,11 @@ module.exports.fetchVenueDailyTotals = (event, context, callback) => {
 		toQPrm = toDate.format('YYYY-MM-DD'),
 		dynamoDbTable = constants.DYNAMODB_TABLES.venueDailyTotals;
 	if (!customerId) {
-		callback(null, getCallbackBody(false, 400, 'Customer id missing'));
+		callback(null, util.getCallbackBody(false, 400, 'Customer id missing'));
 		return;
 	}
 	if (!venueId) {
-		callback(null, getCallbackBody(false, 400, 'Venue id missing'));
+		callback(null, util.getCallbackBody(false, 400, 'Venue id missing'));
 		return;
 	}
 	const dailyTotalsParams = {
@@ -104,7 +109,7 @@ module.exports.fetchVenueDailyTotals = (event, context, callback) => {
 				}
 			});
 			if (includeDays) outputData.days = data.Items;
-			callback(null, getCallbackBody(true, 200, 'Daily totals between '+fromDate.toString() + ' and '+toDate.toString(), outputData));
+			callback(null, util.getCallbackBody(true, 200, 'Daily totals between '+fromDate.toString() + ' and '+toDate.toString(), outputData));
 		}
 	});
 }
@@ -113,26 +118,26 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null,
 		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
 	if (!customerId) {
-		callback(null, getCallbackBody(false, error.statusCode || 400, 'Customer id missing'));
+		callback(null, util.getCallbackBody(false, error.statusCode || 400, 'Customer id missing'));
 		return;
 	}		
 	dynamoDb.get({ TableName: dynamoDbTable, Key: { id: customerId } }, (error, data) => { // get customer record
 		if (error) {
 			console.error(error);
-			callback(null, getCallbackBody(false, error.statusCode || 501, error.toString()));
+			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));
 			return;
 		}
 		else if (!data.Item) {
-			callback(null, getCallbackBody(false, 404,  'Customer not found'));
+			callback(null, util.getCallbackBody(false, 404,  'Customer not found'));
 		}
 		else if (data.Item.active == false) {
 			console.error(error);
-			callback(null, getCallbackBody(false, error.statusCode || 501,  'Customer is not active'));
+			callback(null, util.getCallbackBody(false, error.statusCode || 501,  'Customer is not active'));
 			return;
 		}
 		else if (!data.Item.purplePublicKey || !data.Item.purplePrivateKey) {
 			console.error(error);
-			callback(null, getCallbackBody(false, error.statusCode || 401, 'Customer is missing wifi access keys'));
+			callback(null, util.getCallbackBody(false, error.statusCode || 401, 'Customer is missing wifi access keys'));
 			return;
 		}
 		else {
@@ -267,7 +272,7 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 						// end loop through days
 					});
 					// end loop through venues
-					callback(null, getCallbackBody(true, 200, 'Aggregated visitors for '+data.Items.length + ' venues from '+fromDate.toString() + ' to '+toDate.toString()));					
+					callback(null, util.getCallbackBody(true, 200, 'Aggregated visitors for '+data.Items.length + ' venues from '+fromDate.toString() + ' to '+toDate.toString()));					
 				}
 			});
 			// en d async db query

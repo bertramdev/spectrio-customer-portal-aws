@@ -1,5 +1,6 @@
 'use strict';
 const auth = require("../utils/auth");
+const util = require("../utils/util");
 const constants = require("../utils/constants");
 const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
@@ -25,38 +26,25 @@ module.exports.default = (event, context, callback) => {
                 Item: item
             };
             dynamoDb.put(params, (error) => {
-                var info = {};
+                let statusCode = 200,
+                    success = true,
+                    message;
                 if (error) {
                     console.error(error);
-                    console.log('Could not save '+params.Key.id);
-                    info.statusCode = 400;
-                    info.success = false;
-                    info.message = 'Could not save '+params.Key.id;
+                    statusCode = 400;
+                    success = false;
+                    message = 'Could not save '+params.Key.id + ': '+error.toString();
                     return;
                 }
                 else {
-                    info.success = true;
-                    info.statusCode = 200;
-                    info.message = 'Saved '+params.Key.id;
                     console.log('Saved '+params.Key.id);
+                    message = 'Saved '+params.Key.id;
                 }
-                const output = {
-                    statusCode: info.statusCode,
-                    body: JSON.stringify(info),
-                };	
-                callback(null, output);
+                callback(null, util.getCallbackBody(success, status, message));
             });
         } catch(error) {
             console.log(error);
-            var info = {
-                success: false,
-                message: error.toString()
-            };
-			const output = {
-				statusCode: 500,//error.status,
-				body: JSON.stringify(info)
-			};	
-			callback(null, output);
+            callback(null, util.getCallbackBody(false, 500, error.toString()));            
         }
     }
     else if (httpMethod == 'PUT') {
@@ -88,39 +76,25 @@ module.exports.default = (event, context, callback) => {
             }
             console.log(params);
             dynamoDb.update(params, (error, data) => {
-                var info = {};
+                let statusCode = 200,
+                    success = true,
+                    message;
                 if (error) {
                     console.error(error);
-                    console.log('Could not update '+params.Key.id);
-                    info.statusCode = 400;
-                    info.success = false;
-                    info.message = 'Could not update '+params.Key.id;
+                    statusCode = 400;
+                    success = false;
+                    message = 'Could not update '+params.Key.id + ': '+error.toString();
                     return;
                 }
                 else {
-                    info.success = true;
-                    info.statusCode = 200;
-                    info.message = 'Updated '+params.Key.id;
                     console.log('Updated '+params.Key.id);
-                    info.data = data.Item; 
+                    message = 'Updated '+params.Key.id;
                 }
-                const output = {
-                    statusCode: info.statusCode,
-                    body: JSON.stringify(info),
-                };	
-                callback(null, output);
+                callback(null, util.getCallbackBody(success, status, message));
             });
         } catch(error) {
             console.log(error);
-            var info = {
-                success: false,
-                message: error.toString()
-            };
-			const output = {
-				statusCode: 500,//error.status,
-				body: JSON.stringify(info)
-			};	
-			callback(null, output);
+            callback(null, util.getCallbackBody(false, 500, error.toString()));
         }
     }
     else if (httpMethod == 'DELETE') {
@@ -138,26 +112,21 @@ module.exports.default = (event, context, callback) => {
             }
         };
         dynamoDb.update(params, (error) => {
-            var info = {};
+            let statusCode = 200,
+                success = true,
+                message;
             if (error) {
                 console.error(error);
-                console.log('Could not deactivate '+params.Key.id);
-                info.statusCode = 400;
-                info.success = false;
-                info.message = 'Could not deactivate '+params.Key.id;
+                statusCode = 400;
+                success = false;
+                message = 'Could not deactivate '+params.Key.id + ': '+error.toString();
                 return;
             }
             else {
-                info.success = true;
-                info.statusCode = 200;
-                info.message = 'Saved '+params.Key.id;
-                console.log('Saved '+params.Key.id);
+                console.log('Deactivated '+params.Key.id);
+                message = 'Deactivated '+params.Key.id;
             }
-            const output = {
-                statusCode: info.statusCode,
-                body: JSON.stringify(info),
-            };	
-            callback(null, output);
+            callback(null, util.getCallbackBody(success, status, message));
         });
     
     }
@@ -167,55 +136,35 @@ module.exports.default = (event, context, callback) => {
             Key: {
               id: customerId
             }
-        };
-        
+        };        
         // delete the todo from the database
         dynamoDb.get(params, (error, data) => {
             // handle potential errors
             if (error) {
-              console.error(error);
-              var info = {
-                  success: false,
-                  statusCode:error.statusCode || 501, 
-                  message: error.toString()
-              }
-              callback(null, {
-                statusCode: info.statusCode,
-                body: JSON.stringify(info)
-              });
-              return;
+                let statusCode = 200,
+                    success = true,
+                    message;
+                if (error) {
+                    console.error(error);
+                    statusCode = 501;
+                    success = false;
+                    message = 'Could not get '+params.Key.id + ': '+error.toString();
+                    return;
+                }
+                else {
+                    console.log('Get '+params.Key.id);
+                    message = 'Get '+params.Key.id;
+                }
+                callback(null, util.getCallbackBody(success, status, message));
             }
             else {
-                var info = {
-                    success: true,
-                    statusCode: 200,
-                    data: data.Item
-                };
-                  
-                const response = {
-                    statusCode: info.statusCode,
-                    body: JSON.stringify(info)
-                };
-                callback(null, response);        
+                callback(null, util.getCallbackBody(true, 200, 'Customer retrieved', data.Item));
             }
           });
     }
     else {
-        var info = {
-            success: false,
-            statusCode:400, 
-            message: 'HTTP method not supprted: '+httpMethod
-        }
-        callback(null, {
-          statusCode: info.statusCode,
-//                headers: { 
-//                  'Content-Type': 'text/plain',
-//                  "Access-Control-Allow-Origin" : "*" // Required for CORS support to work           
-//                },
-          body: JSON.stringify(info)
-        });
+        callback(null, util.getCallbackBody(false, 400, 'HTTP method not supprted: '+httpMethod));        
         return;
-
     }
     
 };

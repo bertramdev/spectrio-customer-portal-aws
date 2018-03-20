@@ -1,5 +1,6 @@
 'use strict';
 const auth = require("../utils/auth");
+const util = require("../utils/util");
 const constants = require("../utils/constants");
 const req = require('superagent');
 const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
@@ -19,6 +20,10 @@ module.exports.default = (event, context, callback) => {
 		}
 		callback(null, {
 			statusCode: info.statusCode,
+			headers: {
+				"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+				"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+			},	
 			body: JSON.stringify(info)
 		});
 		return;
@@ -40,6 +45,10 @@ module.exports.default = (event, context, callback) => {
 			}
 			callback(null, {
 				statusCode: info.statusCode,
+				headers: {
+					"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+					"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+				},		
 				body: JSON.stringify(info)
 			});
 			return;
@@ -53,6 +62,10 @@ module.exports.default = (event, context, callback) => {
 			}
 			callback(null, {
 				statusCode: info.statusCode,
+				headers: {
+					"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+					"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+				},		
 				body: JSON.stringify(info)
 			});
 			return;
@@ -66,6 +79,10 @@ module.exports.default = (event, context, callback) => {
 			}
 			callback(null, {
 				statusCode: info.statusCode,
+				headers: {
+					"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+					"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+				},		
 				body: JSON.stringify(info)
 			});
 			return;
@@ -146,6 +163,10 @@ module.exports.default = (event, context, callback) => {
 					}
 					const output = {
 						statusCode: 200,
+						headers: {
+							"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+							"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+						},				
 						body: JSON.stringify({
 							statusCode: 200,
 							success:true,
@@ -169,6 +190,10 @@ module.exports.default = (event, context, callback) => {
 					info.auth = authInfo;
 					const output = {
 						statusCode: 200,//error.status,
+						headers: {
+							"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+							"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+						},				
 						body: JSON.stringify(info)
 					};	
 					callback(null, output);

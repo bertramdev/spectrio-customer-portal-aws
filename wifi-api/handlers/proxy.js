@@ -1,5 +1,6 @@
 'use strict';
 const auth = require("../utils/auth");
+const util = require("../utils/util");
 const constants = require("../utils/constants");
 
 const request = require('superagent');
@@ -13,16 +14,7 @@ module.exports.default = (event, context, callback) => {
 	var customerId = (event.queryStringParameters ? event.queryStringParameters.customerId : null),
 		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
 	if (!customerId) {
-		const info = {
-			success:false,
-			message: 'Customer Id could not be found'
-		};
-		const output = {
-			success: false,
-			statusCode: 200,//error.status,
-			body: JSON.stringify(info)
-		};	
-		callback(null, output);
+		callback(null, util.getCallbackBody(false, 400, 'Customer Id could not be found'));
 		return;
 	}
 
@@ -36,41 +28,16 @@ module.exports.default = (event, context, callback) => {
 	dynamoDb.get(params, (error, data) => {
 		if (error) {
 			console.error(error);
-			var info = {
-				success: false,
-				statusCode:error.statusCode || 501, 
-				message: error.toString()
-			}
-			callback(null, {
-				statusCode: info.statusCode,
-				body: JSON.stringify(info)
-			});
+			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));			
 			return;
 		}
 		else if (data.Item.active == false) {
-			console.error(error);
-			var info = {
-				success: false,
-				statusCode:error.statusCode || 501, 
-				message: 'Customer is not active'
-			}
-			callback(null, {
-				statusCode: info.statusCode,
-				body: JSON.stringify(info)
-			});
+			callback(null, util.getCallbackBody(false, 401, 'Customer is not active'));
+			
 			return;
 		}
 		else if (!data.Item.purplePublicKey || !data.Item.purplePrivateKey) {
-			console.error(error);
-			var info = {
-				success: false,
-				statusCode:error.statusCode || 403, 
-				message: 'Customer is missing wifi access keys'
-			}
-			callback(null, {
-				statusCode: info.statusCode,
-				body: JSON.stringify(info)
-			});
+			callback(null, util.getCallbackBody(false, 403, 'Customer is missing wifi access keys'));
 			return;
 		}
 		else {
@@ -93,9 +60,13 @@ module.exports.default = (event, context, callback) => {
 					console.log(res);
 					const output = {
 						statusCode: 200,
+						headers: {
+							"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+							"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+						},				
 						body: res.text,
 					};	
-					callback(null, output);
+					callback(null, output);					
 				})
 				.catch((error) => {
 					console.log(error);
@@ -109,12 +80,7 @@ module.exports.default = (event, context, callback) => {
 						info.message = error.message;
 						info.timestamp = now;
 					}
-					info.auth = authInfo;
-					const output = {
-						statusCode: 200,//error.status,
-						body: JSON.stringify(info)
-					};	
-					callback(null, output);
+					callback(null, util.getCallbackBody(false, 500, error.message, info));
 				});
 		}
 	});
