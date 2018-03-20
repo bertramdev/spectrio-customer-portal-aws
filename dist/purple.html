@@ -148,10 +148,12 @@ table.table-fixed thead tr th {
                             <div class="card-header bg-light">
                                  Total Guests
                             </div>
-                            <div class="card-body text-center pt-2">
-                                <span id="visitors" style="font-size:180px; fount-weight:1200;">--</span>
+                            <div class="card-body text-center" style="padding-top:60px">
+                                <span id="visitors" style="font-size:160px; font-weight:800;line-height:.95;">--</span>
                                 <br/>
-                                <button type="button" id="export-visitors" class="export-btn btn btn-primary btn-sm" disabled="true">Export Guests</button>
+                                <span style="font-size:16px; font-weight:400;"><span id="visits">--</span> total visits</span>                                
+                                <br/>
+                                <button type="button" id="export-visitors" class="export-btn btn btn-primary btn-sm mt-4" disabled="true">Export Guests</button>
                             </div>
                         </div>
                         <div class="card call-log-card">
@@ -343,6 +345,7 @@ table.table-fixed thead tr th {
                         $('#sources').text(responseObj.data.sourceCaptured);
                         $('#age').text(responseObj.data.ageCaptured);
                         $('#visitors').text(responseObj.data.visitors);
+                        $('#visits').text(Math.max(responseObj.data.visits,responseObj.data.visitors));
                         $('#gender').text(responseObj.data.genderCaptured);
 
                         var data = [['Gender', 'Count']];
