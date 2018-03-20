@@ -38,6 +38,7 @@ table.table-fixed thead tr th {
 	width:23px;
 	padding:1px;
 	margin-right:2px;
+	margin-bottom:2px;
 }
 		</style>
 	</head>
@@ -213,7 +214,7 @@ table.table-fixed thead tr th {
 						$('#voicemail-table>tbody').append($('<tr><td width="35%" class="small" style="overflow:hidden;"><nobr>'+moment(itm.created_at*1000).format('M/D/YY h:mm a')+'</nobr></td>'+
 							'<td width="50%" class="small" style="overflow:hidden;"><nobr>'+itm.to+' '+itm.extension.extension+'</nobr><br/><nobr>'+itm.from.name+'</nobr><br/><nobr>'+itm.from.number+' ('+itm.from.city+', '+itm.from.state+')</nobr></td>'+
 							'<td width="15%" class="small" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play" title="'+itm.duration+' seconds" ></span></button>'+
-							'<button type="button" class="btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
+							'<button type="button" class="d-none d-sm-block btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
 					});
 					$('#page-info').text((offset+1) +' - '+ Math.min(offset+50, data.total) +' of '+data.total);
 					lastOffset = offset;
