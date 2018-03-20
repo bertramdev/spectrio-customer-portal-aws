@@ -40,6 +40,9 @@ table.table-fixed thead tr th {
 	margin-right:2px;
 	margin-bottom:2px;
 }
+.hilight>td {
+	font-weight:800 !important;
+}
 		</style>
 	</head>
 	<body style="padding-top:105px">
@@ -64,7 +67,7 @@ table.table-fixed thead tr th {
 					<a class="nav-link small" href="index.html">Home</a>
 				</li>
                 <li class="nav-item">
-                    <a id="logout small" class="nav-link" href="#">Logout</a>
+                    <a id="logout" class="nav-link small" href="#">Logout</a>
                 </li>
 			</ul>		
 		</div>
@@ -144,8 +147,8 @@ table.table-fixed thead tr th {
                     <table class="table table-fixed table-sm table-striped" id="voicemail-table">
 						<thead>
 							<th scope="col" width="35%" class="small">Date/Time</th>
-							<th scope="col" width="40%" class="small"><nobr>To/From</nobr></th>
-							<th scope="col" width="25%" class="small">&nbsp;</th>
+							<th scope="col" width="55%" class="small"><nobr>To/From</nobr></th>
+							<th scope="col" width="10%" class="small">&nbsp;</th>
 						</thead>
 						<tbody></tbody>
                     </table>
@@ -212,9 +215,9 @@ table.table-fixed thead tr th {
 					$('#voicemail-table>tbody').empty();
 					$.each(data.items, function(idx, itm) {
 						$('#voicemail-table>tbody').append($('<tr><td width="35%" class="small" style="overflow:hidden;"><nobr>'+moment(itm.created_at*1000).format('M/D/YY h:mm a')+'</nobr></td>'+
-							'<td width="50%" class="small" style="overflow:hidden;"><nobr>'+itm.to+' '+itm.extension.extension+'</nobr><br/><nobr>'+itm.from.name+'</nobr><br/><nobr>'+itm.from.number+' ('+itm.from.city+', '+itm.from.state+')</nobr></td>'+
-							'<td width="15%" class="small" style="text-align:right;"><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play" title="'+itm.duration+' seconds" ></span></button>'+
-							'<button type="button" class="d-none d-sm-block btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></td></tr>'));
+							'<td width="55%" class="small" style="overflow:hidden;"><nobr>'+itm.to+' '+itm.extension.extension+'</nobr><br/><nobr>'+itm.from.name+'</nobr><br/><nobr>'+itm.from.number+' ('+itm.from.city+', '+itm.from.state+')</nobr></td>'+
+							'<td width="10%" class="small" styleX="text-align:right;"><nobr><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play" title="'+itm.duration+' seconds" ></span></button>'+
+							'<button type="button" class="d-none d-sm-block btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></nobr></td></tr>'));
 					});
 					$('#page-info').text((offset+1) +' - '+ Math.min(offset+50, data.total) +' of '+data.total);
 					lastOffset = offset;
@@ -339,11 +342,14 @@ table.table-fixed thead tr th {
 					fetchVoiceMail(lastOffset + 50);
 				});
 				$(document).on('click', '.downloadButton',function() {
-					var voiceMailId = $(this).data('voicemail-id');
+					let voiceMailId = $(this).data('voicemail-id');
 					downloadVoiceMail(voiceMailId, downloadHandler);
 				});
 				$(document).on('click', '.playButton', function() {
-					var voiceMailId = $(this).data('voicemail-id');
+					let qThis = $(this);
+					let voiceMailId = qThis.data('voicemail-id');
+					$('.hilight').removeClass('hilight');
+					qThis.closest('tr').addClass('hilight');
 					downloadVoiceMail(voiceMailId, playHandler);
 				});
 				$('#login-button').on('click', function() {
