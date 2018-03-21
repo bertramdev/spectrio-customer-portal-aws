@@ -15,7 +15,7 @@
 	border: 1px silver solid;
 }
 table.table-fixed tbody {
-	height:120px;
+	height:240px;
 	overflow-y:auto;
 	width: 100%;
 }
@@ -43,6 +43,12 @@ table.table-fixed thead tr th {
 .hilight>td {
 	font-weight:800 !important;
 }
+.card-title>h2 {
+	margin:0;
+}
+.card-body {
+	padding:10px;
+}
 		</style>
 	</head>
 	<body style="padding-top:105px">
@@ -57,9 +63,7 @@ table.table-fixed thead tr th {
 		
 		<div class="collapse navbar-collapse" id="navbarSupportedContent">
 			<ul class="navbar-nav mr-auto">
-				<li class="nav-item"><a class="nav-link" href="#metrics-section">Metrics</a></li>
-				<li class="nav-item"><a class="nav-link" href="#phonenumbers-section">Phone Numbers</a></li>
-				<li class="nav-item"><a class="nav-link" href="#extensions-section">Extensions</a></li>
+				<li class="nav-item"><a class="nav-link" href="#metrics-section">Call Logs</a></li>
 				<li class="nav-item"><a class="nav-link" href="#voicemail-section">Voice Mail</a></li>
 			</ul>
 			<ul class="navbar-nav ml-auto">
@@ -74,13 +78,24 @@ table.table-fixed thead tr th {
 		</nav>		
 
 		<div class="container-fluid">
-
-		<div class="row pb-4" id="metrics-section">
-			<div class="col-sm-10 offset-sm-2">
+		<div class="row" id="metrics-section">
+			<label class="col-sm-2">Extensions</label>
+			<div class="col-sm-10">
+				<div class="pb-2">
+					<select class="form-control" id="extensions-select" name="extensions">
+						<option value="-1">All Extensions</option>
+					</select>
+				</div>
+			</div>
+		</div>
+		<div class="row pb-2" id="metrics-section">
+			<label class="col-sm-2">Call Logs</label>
+			<div class="col-sm-10">
+				
                 <div class="card-deck">
                     <div class="card call-log-card bg-primary">
                         <div class="card-body">
-                            <h1 class="card-title text-white" id="1day">--</h1>
+                            <h2 class="card-title text-white" id="1day">--</h2>
                         </div>
                         <div class="card-footer bg-light text-primary">
                             Total Calls Last 24 Hours
@@ -88,7 +103,7 @@ table.table-fixed thead tr th {
                     </div>
                     <div class="card call-log-card bg-primary">
                         <div class="card-body">
-                            <h1 class="card-title text-white" id="7days">--</h1>
+                            <h2 class="card-title text-white" id="7days">--</h2>
                         </div>
                         <div class="card-footer bg-light text-primary">
                             Total Calls Last 7 <nobr>days&nbsp;&nbsp;</nobr>
@@ -96,7 +111,7 @@ table.table-fixed thead tr th {
                     </div>
                     <div class="card call-log-card bg-primary">
                         <div class="card-body">
-                            <h1 class="card-title text-white" id="30days">--</h1>
+                            <h2 class="card-title text-white" id="30days">--</h2>
                         </div>
                         <div class="card-footer bg-light text-primary">
                             Total Calls Last 30 days
@@ -111,39 +126,14 @@ table.table-fixed thead tr th {
 				<div class="col-sm-10">
 				<textarea class="form-control" name="address" aria-describedby="addressHelp" readonly rows="4"></textarea>
 				</div>
-			</div-->	
-			<div class="form-group row" id="phonenumbers-section">
-				<label for="phoneNumbers" class="col-sm-2">Phone Numbers</label>
-				<div class="col-sm-10">
-					<table class="table table-fixed table-sm" id="phone-numbers-table">
-						<thead>
-							<th scope="col" width="40%" class="small"><nobr>Number</nobr></th>
-							<th scope="col" width="60%" class="small">Name</th>
-						</thead>
-						<tbody></tbody>
-					</table>
-					<div class="float-right">Total: <span id="phonenumbers-total">--</span></div>
-				</div>
-			</div>
-			<div class="form-group row" id="extensions-section">
-				<label for="extensions" class="col-sm-2">Extensions</label>
-				<div class="col-sm-10">
-                    <div class="table-responsive">
-					<table class="table table-fixed table-sm" id="extensions-table">
-						<thead>
-							<th scope="col" width="40%" class="small">Extension</th>
-							<th scope="col" width="60%" class="small">Name</th>
-						</thead>
-						<tbody></tbody>
-                    </table>
-                    </div>
-					<div class="float-right">Total: <span id="extensions-total">--</span></div>
-				</div>
-			</div>
+			</div-->
 			<div class="form-group row" id="voicemail-section">
 				<label for="voicemail" class="col-sm-2">Voice Mail</label>
+
 				<div class="col-sm-10">
-                    <div class="table-responsive">
+
+					<div class="table-responsive">
+										
                     <table class="table table-fixed table-sm table-striped" id="voicemail-table">
 						<thead>
 							<th scope="col" width="35%" class="small">Date/Time</th>
@@ -207,19 +197,31 @@ table.table-fixed thead tr th {
 			var lastOffset = 0;
 			var headers;
 			function fetchVoiceMail(offset) {
+				$('#voicemail-table>tbody').empty();
+				$('#page-info').text(null);
 				offset = offset || 0;
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/voicemail?limit=50&sort[created_at]=desc&offset='+offset, {
+				let extId = $('#extensions-select').val();
+				
+				let url = 'https://api.phone.com/v4/accounts/'+accountId+'/voicemail?limit=50&sort[created_at]=desc&offset='+offset;
+				if (extId != '-1') {
+					url += '&filters[extension]='+extId;
+				}
+				$.ajax(url, {
 					headers: headers
 				})
 				.done(function(data) {
-					$('#voicemail-table>tbody').empty();
 					$.each(data.items, function(idx, itm) {
 						$('#voicemail-table>tbody').append($('<tr><td width="35%" class="small" style="overflow:hidden;"><nobr>'+moment(itm.created_at*1000).format('M/D/YY h:mm a')+'</nobr></td>'+
 							'<td width="55%" class="small" style="overflow:hidden;"><nobr>'+itm.to+' '+itm.extension.extension+'</nobr><br/><nobr>'+itm.from.name+'</nobr><br/><nobr>'+itm.from.number+' ('+itm.from.city+', '+itm.from.state+')</nobr></td>'+
 							'<td width="10%" class="small" styleX="text-align:right;"><nobr><button type="button" class="btn btn-sm btn-primary playButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-media-play" title="'+itm.duration+' seconds" ></span></button>'+
 							'<button type="button" class="d-none d-sm-block btn btn-sm btn-primary downloadButton voicemail-button" data-voicemail-id="'+itm.id+'"><span class="oi oi-cloud-download"></span></button></nobr></td></tr>'));
 					});
-					$('#page-info').text((offset+1) +' - '+ Math.min(offset+50, data.total) +' of '+data.total);
+					if (data.total > 0) {
+						$('#page-info').text((offset+1) +' - '+ Math.min(offset+50, data.total) +' of '+data.total);
+					}
+					else {
+						$('#page-info').text('No voice mail');
+					}
 					lastOffset = offset;
 
 				});
@@ -268,44 +270,47 @@ table.table-fixed thead tr th {
 				xhr.send();
 			}
 
+			function loadMetrics() {
+				$('#7days,#30days,#1day').text('--');
+				let extId = $('#extensions-select').val();
+				
+				let extFilter = '';
+				if (extId != '-1') {
+					extFilter += '&filters[extension]='+extId;
+				}
+				
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(7,'d').unix())+extFilter, {
+					headers: headers
+				})
+				.done(function(data) {
+					$('#7days').text(data.total);
+				});
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(1,'d').unix())+extFilter, {
+					headers: headers
+				})
+				.done(function(data) {
+					$('#1day').text(data.total);
+				});
+				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(30,'d').unix())+extFilter, {
+					headers: headers
+				})
+				.done(function(data) {
+					$('#30days').text(data.total);
+				});				
+			}
+
 			function loadData() {
 				$.ajax(customerURL+'/'+accountId)
 				.done(function(respObj) {
 					if (respObj && respObj.success) {
 						headers = { Authorization: 'Bearer '+respObj.data.phoneApiToken };
-						$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(7,'d').unix()), {
-							headers: headers
-						})
-						.done(function(data) {
-							$('#7days').text(data.total);
-						});
-						$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(1,'d').unix()), {
-							headers: headers
-						})
-						.done(function(data) {
-							$('#1day').text(data.total);
-						});
-						$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(30,'d').unix()), {
-							headers: headers
-						})
-						.done(function(data) {
-							$('#30days').text(data.total);
-						});
-						$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/phone-numbers?limit=300', {
-							headers: headers
-						})
-						.done(function(data) {
-							$.each(data.items, function(idx, itm) {
-								$('#phone-numbers-table>tbody').append($('<tr><td width="40%" class="small">'+itm.phone_number+'</td><td width="60%" class="small">'+itm.name+'</td></tr>'));						
-							});
-							$('#phonenumbers-total').text(data.total);
-						});
+						loadMetrics();
 						$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/extensions?limit=300&sort[extension]=asc', {
 							headers: headers
 						})
 						.done(function(data) {
 							$.each(data.items, function(idx, itm) {
-								$('#extensions-table>tbody').append($('<tr><td width="40%" class="small">'+itm.extension+'</td><td width="60%" class="small"><nobr>'+itm.name+'</nobr></td></tr>'));						
+								$('#extensions-select').append('<option value="'+itm.id+'">'+itm.extension+' - '+itm.name+'</option>');
 							});
 							$('#extensions-total').text(data.total);
 						});
@@ -333,7 +338,11 @@ table.table-fixed thead tr th {
                 }
                 else {
                     loadData();
-                }
+				}
+				$('#extensions-select').on('change', function(evt){
+					fetchVoiceMail(0);
+					loadMetrics();
+				});
 				$('#previous').on('click', function() {
 					if (lastOffset > 0)
 						fetchVoiceMail(lastOffset - 50);
