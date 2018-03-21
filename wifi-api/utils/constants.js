@@ -13,9 +13,11 @@ const now = new Date();
 
 module.exports.MOMENTS = {
 	now: moment(now),
+	age13Birth: moment(now).add(-13, 'years'), 
 	age18Birth: moment(now).add(-18, 'years'), 
+	age25Birth: moment(now).add(-25, 'years'),
 	age35Birth: moment(now).add(-35, 'years'),
-	age50Birth: moment(now).add(-50, 'years'),
-	age70Birth: moment(now).add(-70, 'years')
-
+	age45Birth: moment(now).add(-45, 'years'),
+	age55Birth: moment(now).add(-55, 'years'),
+	age65Birth: moment(now).add(-65, 'years')
 };

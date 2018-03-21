@@ -24,10 +24,12 @@ function getDailyInfo(customerId, externalId, fromString2, name) {
 		source: {},
 		age: {
 			age0to17:0,
-			age18to34:0,
-			age35to49:0,
-			age50to70:0,
-			ageOver70:0
+			age18to24:0,
+			age25to34:0,
+			age35to44:0,
+			age45to54:0,
+			age55to64:0,
+			ageOver65:0
 		},
 		gender: {
 			male: 0,
@@ -213,11 +215,14 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 												try {
 													let birth = moment(visitor.date_of_birth);
 													dailyTotals['ageCaptured']++;
-													if (birth.isAfter(constants.MOMENTS.age18Birth)) dailyTotals.age.age0to17++;
-													else if (birth.isAfter(constants.MOMENTS.age35Birth)) dailyTotals.age.age18to34++;
-													else if (birth.isAfter(constants.MOMENTS.age50Birth)) dailyTotals.age.age35to49++;
-													else if (birth.isAfter(constants.MOMENTS.age70Birth)) dailyTotals.age.age50to70++;
-													else dailyTotals.age.ageOver70++;
+													if (birth.isAfter(constants.MOMENTS.age13Birth)) dailyTotals.age.age0to13++;
+													else if (birth.isAfter(constants.MOMENTS.age18Birth)) dailyTotals.age.age13to17++;
+													else if (birth.isAfter(constants.MOMENTS.age25Birth)) dailyTotals.age.age18to24++;
+													else if (birth.isAfter(constants.MOMENTS.age35Birth)) dailyTotals.age.age25to34++;
+													else if (birth.isAfter(constants.MOMENTS.age45Birth)) dailyTotals.age.age35to44++;
+													else if (birth.isAfter(constants.MOMENTS.age55Birth)) dailyTotals.age.age45to54++;
+													else if (birth.isAfter(constants.MOMENTS.age65Birth)) dailyTotals.age.age55to64++;
+													else dailyTotals.age.ageOver65++;
 												}
 												catch (e) {
 													console.log(e);
