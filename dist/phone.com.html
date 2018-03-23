@@ -49,7 +49,7 @@ table.table-fixed thead tr th {
 .card-body {
 	padding:10px;
 }
-.export-link {
+.export-link, #export-voice-mail {
 	cursor: pointer;
 }
 		</style>
@@ -101,7 +101,7 @@ table.table-fixed thead tr th {
                             <h2 class="card-title text-white" id="1day">--</h2>
 							<div class="small text-white export-link" data-days="1">Export</div>
                         </div>
-                        <div class="card-footer bg-light text-primary">
+                        <div class="card-footer bg-light">
 							Total Calls Last 24 Hours
                         </div>
                     </div>
@@ -110,7 +110,7 @@ table.table-fixed thead tr th {
                             <h2 class="card-title text-white" id="7days">--</h2>
 							<div class="small text-white export-link" data-days="7">Export</div>
                         </div>
-                        <div class="card-footer bg-light text-primary">
+                        <div class="card-footer bg-light">
                             Total Calls Last 7 <nobr>days&nbsp;&nbsp;</nobr>
                         </div>
                     </div>
@@ -119,7 +119,7 @@ table.table-fixed thead tr th {
                             <h2 class="card-title text-white" id="30days">--</h2>
 							<div class="small text-white export-link" data-days="30">Export</div>
                         </div>
-                        <div class="card-footer bg-light text-primary">
+                        <div class="card-footer bg-light">
                             Total Calls Last 30 days
                         </div>
                     </div>
@@ -149,12 +149,19 @@ table.table-fixed thead tr th {
 						<tbody></tbody>
                     </table>
                     </div>
-					<nav>
-						<ul class="pagination">
+					<nav class="navbar navbar-expand-md" style="padding:0">
+									
+						<ul class="navbar-nav pagination mr-auto">
 							<li class="page-item"><a id="previous" class="page-link" href="#voicemail-section">Previous</a></li>
 							<li class="page-item"><a id="next" class="page-link" href="#voicemail-section">Next</a></li>
 							<li class="page-item" style="padding:5px;"><span id="page-info"></span></li>
 						</ul>
+						<ul class="navbar-nav ml-auto">
+							<li class="nav-item pr-2">
+								<span id="export-voice-mail" class="text-primary" title="Downloads will be executed in the background may take several minutes or more.">Export All</span>
+							</li>
+						</ul>		
+										
 					</nav>
 					<div id="audio-container" style="display:none">
 						<audio controls id="voicemail-audio">
@@ -199,16 +206,78 @@ table.table-fixed thead tr th {
 		<script>
             var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
 			var customerURL = 'https:/'+proxyHost+'/dev/customer';
-			var customerId = 1335221;//4286 1335221
+			var customerId = 4286;//4286 1335221
 			var accountId;
 			var lastOffset = 0;
 			var headers;
+
+			function exportVoiceMail() {
+				document.body.style.cursor='wait';
+				$('#export-voice-mail').attr('disabled',true);
+				$('#export-voice-mail').html('<i>Downloading...</i>');
+				let extId = $('#extensions-select').val();
+				
+				let extFilter = '';
+				if (extId != '-1') {
+					extFilter += '&filters[extension]='+extId;
+				}
+				let useStorage = false;
+				if (typeof(Storage) !== "undefined") {
+					useStorage = true;
+					localStorage.voice_mail = '';
+				}
+				
+				let csv = 'id,to,extension,extension_name,is_new,from_number,from_name,from_city,from_state,created_at,duration,folder\n';
+				let fetchFxn = function(offset) {
+					offset = offset || 0;
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/voicemail?offset='+offset+'&limit='+PAGE_SIZE+extFilter, {
+						headers: headers
+					})
+					.done(function(data) {
+						data.items.forEach(function(item) {
+							let ext = '',
+								extension_name = '',
+								from = {number:'',name:'',city:'',state:''},
+								createdDate = '';
+							if (item.extension) {
+								ext = item.extension.extension;
+								extension_name = item.extension.name; 
+							}
+							if (item.from) {
+								from.number = item.from.number;
+								from.name = item.from.name;
+								from.city = item.from.city;
+								from.state = item.from.state;
+							}
+							if (item.created_at) createdDate = new Date(item.created_at*1000).toString();
+							csv += encodeURI(item.id+',"'+item.to+'","'+ext+'","'+extension_name+'","'+item.is_new+'","'+from.number+'","'+from.name+'","'+from.city+'","'+from.state+'","'+createdDate+'","'+item.duration+'","'+item.folder+'"\n');
+						});
+						if (useStorage) {
+							localStorage.voice_mail += csv;
+							csv = '';
+						}
+						if (data.total > offset + PAGE_SIZE) {
+							fetchFxn(offset+PAGE_SIZE);
+						}
+						else {
+							if (useStorage) {
+								csv = localStorage.voice_mail;
+							}
+							console.log(csv);
+							exportCSV(csv, 'voice_mail.csv');
+							document.body.style.cursor='default';
+							$('#export-voice-mail').removeAttr('disabled').html('Export All');
+						}
+					});
+				}
+				fetchFxn(0);
+            }
+
 			function fetchVoiceMail(offset) {
 				$('#voicemail-table>tbody').empty();
 				$('#page-info').text(null);
 				offset = offset || 0;
-				let extId = $('#extensions-select').val();
-				
+				let extId = $('#extensions-select').val();				
 				let url = 'https://api.phone.com/v4/accounts/'+accountId+'/voicemail?limit=50&sort[created_at]=desc&offset='+offset;
 				if (extId != '-1') {
 					url += '&filters[extension]='+extId;
@@ -230,9 +299,7 @@ table.table-fixed thead tr th {
 						$('#page-info').text('No voice mail');
 					}
 					lastOffset = offset;
-
 				});
-				
 			}
 
 			function playHandler() {
@@ -316,11 +383,11 @@ table.table-fixed thead tr th {
 							if (item.extension) ext = item.extension.extension;
 							csv += encodeURI(item.id+','+item.type+',"'+item.called_number+'",'+ext+',"'+item.caller_id+'","'+item.start_time+'",'+item.call_duration+',"'+item.final_action+'"\n');
 						});
+						if (useStorage) {
+							localStorage.call_logs += csv;
+							csv = '';
+						}
 						if (data.total > offset + PAGE_SIZE) {
-							if (useStorage) {
-								localStorage.call_logs += csv;
-								csv = '';
-							}
 							fetchFxn(offset+PAGE_SIZE);
 						}
 						else {
@@ -335,7 +402,6 @@ table.table-fixed thead tr th {
 				}
 				fetchFxn(0);
             }
-
 
 			function loadMetrics() {
 				$('#7days,#30days,#1day').text('--');
@@ -404,6 +470,9 @@ table.table-fixed thead tr th {
 				$('.export-link').on('click', function(evt){
 					exportCallLogs(parseInt($(this).data('days')));
 				});
+				$('#export-voice-mail').on('click', function(evt){
+					exportVoiceMail();
+				});				
 				$('#previous').on('click', function() {
 					if (lastOffset > 0)
 						fetchVoiceMail(lastOffset - 50);
