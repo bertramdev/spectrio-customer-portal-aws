@@ -21,3 +21,6 @@ module.exports.MOMENTS = {
 	age55Birth: moment(now).add(-55, 'years'),
 	age65Birth: moment(now).add(-65, 'years')
 };
+
+module.exports.ELASTIC_URL = process.env.ELASTIC_URL;
+module.exports.REGION = process.env.REGION;

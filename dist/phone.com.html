@@ -192,8 +192,9 @@ table.table-fixed thead tr th {
 		</div>
 		<script>
             var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
-            var customerURL = 'https:/'+proxyHost+'/dev/customer';
-			var accountId = 1335221;
+			var customerURL = 'https:/'+proxyHost+'/dev/customer';
+			var customerId = 4286;
+			var accountId;
 			var lastOffset = 0;
 			var headers;
 			function fetchVoiceMail(offset) {
@@ -300,9 +301,10 @@ table.table-fixed thead tr th {
 			}
 
 			function loadData() {
-				$.ajax(customerURL+'/'+accountId)
+				$.ajax(customerURL+'/'+customerId)
 				.done(function(respObj) {
 					if (respObj && respObj.success) {
+						accountId = respObj.data.phoneAccountId;
 						headers = { Authorization: 'Bearer '+respObj.data.phoneApiToken };
 						loadMetrics();
 						$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/extensions?limit=300&sort[extension]=asc', {

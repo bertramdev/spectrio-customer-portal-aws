@@ -46,8 +46,8 @@ module.exports.default = (event, context, callback) => {
 				path = (event.queryStringParameters ? event.queryStringParameters.path : null) || '/api/company/v1/venues',
 				now = new Date(),
 				authInfo = auth.getAuthInfo(publicKey, privateKey, path, now), 
-				url = 'https://'+authInfo.portalDomain+path;
-			
+				url = 'https://'+authInfo.portalDomain+path;				
+
 			request
 				.get(url)
 				.accept('application/json')

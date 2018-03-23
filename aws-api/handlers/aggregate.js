@@ -38,23 +38,8 @@ function getDailyInfo(customerId, externalId, fromString2, name) {
 	};
 }
 
-function getCallbackBody(success, statusCode, message, data) {
-	return {
-		statusCode: statusCode,
-		headers: {
-			"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-			"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-		},
-		body: JSON.stringify({
-			success: success,
-			statusCode:statusCode, 
-			message: message,
-			data: (data||null)
-		})
-	};
-}
-
 module.exports.fetchVenueDailyTotals = (event, context, callback) => {
+	console.log('event');
 	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null,
 		venueId = event.queryStringParameters ? event.queryStringParameters.venueId : null,
 		fromPrm = (event.queryStringParameters ? event.queryStringParameters.from : null),

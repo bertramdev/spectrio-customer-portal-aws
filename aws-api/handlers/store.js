@@ -13,19 +13,7 @@ module.exports.default = (event, context, callback) => {
 		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
 
 	if (!customerId) {
-		var info = {
-			success: false,
-			statusCode:error.statusCode || 404, 
-			message: 'Customer id not found'
-		}
-		callback(null, {
-			statusCode: info.statusCode,
-			headers: {
-				"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-				"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-			},	
-			body: JSON.stringify(info)
-		});
+		callback(null, util.getCallbackBody(false, error.statusCode || 404, 'Customer id not found'));							
 		return;
 	}
 		
@@ -38,53 +26,17 @@ module.exports.default = (event, context, callback) => {
 	dynamoDb.get(params, (error, data) => {
 		if (error) {
 			console.error(error);
-			var info = {
-				success: false,
-				statusCode:error.statusCode || 501, 
-				message: error.toString()
-			}
-			callback(null, {
-				statusCode: info.statusCode,
-				headers: {
-					"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-					"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-				},		
-				body: JSON.stringify(info)
-			});
+			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));	
 			return;
 		}
 		else if (data.Item.active == false) {
 			console.error(error);
-			var info = {
-				success: false,
-				statusCode:error.statusCode || 501, 
-				message: 'Customer is not active'
-			}
-			callback(null, {
-				statusCode: info.statusCode,
-				headers: {
-					"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-					"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-				},		
-				body: JSON.stringify(info)
-			});
+			callback(null, util.getCallbackBody(false, 401, 'Customer is not active'));	
 			return;
 		}
 		else if (!data.Item.purplePublicKey || !data.Item.purplePrivateKey) {
 			console.error(error);
-			var info = {
-				success: false,
-				statusCode:error.statusCode || 403, 
-				message: 'Customer is missing wifi access keys'
-			}
-			callback(null, {
-				statusCode: info.statusCode,
-				headers: {
-					"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-					"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-				},		
-				body: JSON.stringify(info)
-			});
+			callback(null, util.getCallbackBody(false, 403, 'Customer is missing wifi access keys'));
 			return;
 		}
 		else {
@@ -161,19 +113,7 @@ module.exports.default = (event, context, callback) => {
 						}
 						msg = successCount + ' ' + dataField + ' saved.';
 					}
-					const output = {
-						statusCode: 200,
-						headers: {
-							"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-							"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-						},				
-						body: JSON.stringify({
-							statusCode: 200,
-							success:true,
-							message:msg
-						})
-					};	
-					callback(null, output);
+					callback(null, util.getCallbackBody(false, 200, msg));
 				})
 				.catch((error) => {
 					console.log(error);
@@ -188,15 +128,7 @@ module.exports.default = (event, context, callback) => {
 						info.timestamp = now;
 					}
 					info.auth = authInfo;
-					const output = {
-						statusCode: 200,//error.status,
-						headers: {
-							"Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-							"Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-						},				
-						body: JSON.stringify(info)
-					};	
-					callback(null, output);
+					callback(null, util.getCallbackBody(info.success, 200, 'Could not complete API call', info));
 				});
 		}
 	});
