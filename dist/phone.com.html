@@ -49,6 +49,9 @@ table.table-fixed thead tr th {
 .card-body {
 	padding:10px;
 }
+.export-link {
+	cursor: pointer;
+}
 		</style>
 	</head>
 	<body style="padding-top:105px">
@@ -96,14 +99,16 @@ table.table-fixed thead tr th {
                     <div class="card call-log-card bg-primary">
                         <div class="card-body">
                             <h2 class="card-title text-white" id="1day">--</h2>
+							<div class="small text-white export-link" data-days="1">Export</div>
                         </div>
                         <div class="card-footer bg-light text-primary">
-                            Total Calls Last 24 Hours
+							Total Calls Last 24 Hours
                         </div>
                     </div>
                     <div class="card call-log-card bg-primary">
                         <div class="card-body">
                             <h2 class="card-title text-white" id="7days">--</h2>
+							<div class="small text-white export-link" data-days="7">Export</div>
                         </div>
                         <div class="card-footer bg-light text-primary">
                             Total Calls Last 7 <nobr>days&nbsp;&nbsp;</nobr>
@@ -112,6 +117,7 @@ table.table-fixed thead tr th {
                     <div class="card call-log-card bg-primary">
                         <div class="card-body">
                             <h2 class="card-title text-white" id="30days">--</h2>
+							<div class="small text-white export-link" data-days="30">Export</div>
                         </div>
                         <div class="card-footer bg-light text-primary">
                             Total Calls Last 30 days
@@ -193,7 +199,7 @@ table.table-fixed thead tr th {
 		<script>
             var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
 			var customerURL = 'https:/'+proxyHost+'/dev/customer';
-			var customerId = 4286;
+			var customerId = 1335221;//4286 1335221
 			var accountId;
 			var lastOffset = 0;
 			var headers;
@@ -269,7 +275,67 @@ table.table-fixed thead tr th {
 				xhr.responseType = 'blob';
 				xhr.setRequestHeader('Authorization', headers.Authorization);
 				xhr.send();
+
 			}
+            function exportCSV(csv, name) {
+                let encodedUri = "data:text/csv;charset=utf-8,"+csv;
+                //var encodedUri = encodeURI(csvContent);
+                let link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", name);
+                document.body.appendChild(link); // Required for FF
+                link.click(); // This will download the data file named "my_data.csv". 
+                document.body.removeChild(link);               
+            }
+			
+			const PAGE_SIZE = 350;
+
+			function exportCallLogs(days) {
+				document.body.style.cursor='wait';
+				$('[data-days="'+days+'"]').attr('disabled',true).html('<i>Downloading...</i>');
+				let extId = $('#extensions-select').val();
+				
+				let extFilter = '';
+				if (extId != '-1') {
+					extFilter += '&filters[extension]='+extId;
+				}
+				let useStorage = false;
+				if (typeof(Storage) !== "undefined") {
+					useStorage = true;
+					localStorage.call_logs = '';
+				}
+				let csv = 'id,type,called_number,extension,caller_id,start_time,call_duration,final_action\n';
+				let fetchFxn = function(offset) {
+					offset = offset || 0;
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?offset='+offset+'&limit='+PAGE_SIZE+'&filters[start_time]=gt:'+(moment().subtract(days,'d').unix())+extFilter, {
+						headers: headers
+					})
+					.done(function(data) {
+						data.items.forEach(function(item) {
+							let ext = '';
+							if (item.extension) ext = item.extension.extension;
+							csv += encodeURI(item.id+','+item.type+',"'+item.called_number+'",'+ext+',"'+item.caller_id+'","'+item.start_time+'",'+item.call_duration+',"'+item.final_action+'"\n');
+						});
+						if (data.total > offset + PAGE_SIZE) {
+							if (useStorage) {
+								localStorage.call_logs += csv;
+								csv = '';
+							}
+							fetchFxn(offset+PAGE_SIZE);
+						}
+						else {
+							if (useStorage) {
+								csv = localStorage.call_logs;
+							}
+							exportCSV(csv, 'call_logs_'+days+'_days.csv');
+							document.body.style.cursor='default';
+							$('[data-days="'+days+'"]').removeAttr('disabled').html('Export');
+						}
+					});
+				}
+				fetchFxn(0);
+            }
+
 
 			function loadMetrics() {
 				$('#7days,#30days,#1day').text('--');
@@ -322,17 +388,6 @@ table.table-fixed thead tr th {
 						alert('Huge problem!');
 					}
 				});
-
-				/*
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId, {
-					headers: headers
-				})
-				.done(function(data) {
-					var address = data.billing_contact.address;
-					$('[name=address]').val(data.billing_contact.name+'\n'+address.line_1+'\n'+address.line_2+'\n'+address.city+' '+address.province+' '+address.postal_code+'\n');
-				});
-                */
-
 			}
 			$(document).ready(function() {
                 if (Cookies.get('loggedInX')!='true') {
@@ -344,6 +399,10 @@ table.table-fixed thead tr th {
 				$('#extensions-select').on('change', function(evt){
 					fetchVoiceMail(0);
 					loadMetrics();
+				});
+				$('.export-link').attr('title','Downloads will be executed in the background may take several minutes or more.');				
+				$('.export-link').on('click', function(evt){
+					exportCallLogs(parseInt($(this).data('days')));
 				});
 				$('#previous').on('click', function() {
 					if (lastOffset > 0)
