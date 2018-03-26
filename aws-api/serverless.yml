@@ -48,16 +48,26 @@ functions:
   purpleAggregateCustomerVisitors:
     handler: /handlers/aggregate.calculateVenuesDailyTotals
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateCustomerVisitors
-    timeout: 29
+    timeout: 300
     events:
       - http:
           path: purpleAggregateVenueVisitors
           method: get
           cors: true
+  purpleAggregateAllCustomerVisitors:
+    handler: /handlers/aggregate.calculateAllVenuesDailyTotals
+    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateAllCustomerVisitors
+    timeout: 300
+    events:
+      - http:
+          path: purpleAggregateAllVenueVisitors
+          method: get
+          cors: true
+#      - schedule: rate(1 day)
   purpleFetchVenueDailyTotals:
     handler: /handlers/aggregate.fetchVenueDailyTotals
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleFetchVenueDailyTotals
-    timeout: 29
+    timeout: 300
     events:
       - http:
           path: purpleFetchVenueDailyTotals
@@ -113,12 +123,22 @@ functions:
   callLogImport:
     handler: /handlers/calllog.import
     name: ${self:service}-${opt:stage, self:provider.stage}-call-log-import
-    timeout: 29
+    timeout: 300
     events:
       - http:
           path: callLogImport
           method: get
           cors: true
+  callLogImportAll:
+    handler: /handlers/calllog.importAll
+    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-import-all
+    timeout: 300
+    events:
+      - http:
+          path: callLogImportAll
+          method: get
+          cors: true
+      - schedule: rate(1 day)
 
 resources:
   Resources:

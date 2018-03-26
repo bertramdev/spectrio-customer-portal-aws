@@ -6,6 +6,32 @@ const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-depe
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 AWS.config.region = process.env.REGION;
 
+module.exports.fetch = (customerId, callback) => {
+    const dynamoDbTable = constants.DYNAMODB_TABLES.customers;
+    const params = {
+        TableName: dynamoDbTable
+    };
+    if (customerId) {
+		params.FilterExpression = "id = :id"
+        params.ExpressionAttributeValues = { ":id":customerId};
+    }
+    console.log(customerId);
+    // delete the todo from the database
+    dynamoDb.scan(params, (error, data) => {
+        // handle potential errors
+        console.log(error);
+        console.log(data);
+        if (error) {
+            console.log(error);
+            callback(error, null);
+        }
+        else {
+            console.log(data);
+            callback(null, data.Items);
+        }
+      });
+}
+
 module.exports.default = (event, context, callback) => {
 	console.log(event);
 	var customerId = event.pathParameters.id,
@@ -34,13 +60,12 @@ module.exports.default = (event, context, callback) => {
                     statusCode = 400;
                     success = false;
                     message = 'Could not save '+params.Key.id + ': '+error.toString();
-                    return;
                 }
                 else {
                     console.log('Saved '+params.Key.id);
                     message = 'Saved '+params.Key.id;
                 }
-                callback(null, util.getCallbackBody(success, status, message));
+                callback(null, util.getCallbackBody(success, statusCode, message));
             });
         } catch(error) {
             console.log(error);
@@ -84,13 +109,12 @@ module.exports.default = (event, context, callback) => {
                     statusCode = 400;
                     success = false;
                     message = 'Could not update '+params.Key.id + ': '+error.toString();
-                    return;
                 }
                 else {
                     console.log('Updated '+params.Key.id);
                     message = 'Updated '+params.Key.id;
                 }
-                callback(null, util.getCallbackBody(success, status, message));
+                callback(null, util.getCallbackBody(success, statusCode, message));
             });
         } catch(error) {
             console.log(error);
@@ -126,46 +150,26 @@ module.exports.default = (event, context, callback) => {
                 console.log('Deactivated '+params.Key.id);
                 message = 'Deactivated '+params.Key.id;
             }
-            callback(null, util.getCallbackBody(success, status, message));
+            callback(null, util.getCallbackBody(success, statusCode, message));
         });
     
     }
     else if (httpMethod == 'GET') {
-        const params = {
-            TableName: dynamoDbTable,
-            Key: {
-              id: customerId
-            }
-        };        
-        // delete the todo from the database
-        dynamoDb.get(params, (error, data) => {
-            // handle potential errors
-            if (error) {
-                let statusCode = 200,
-                    success = true,
-                    message;
-                if (error) {
-                    console.error(error);
-                    statusCode = 501;
-                    success = false;
-                    message = 'Could not get '+params.Key.id + ': '+error.toString();
-                    return;
-                }
-                else {
-                    console.log('Get '+params.Key.id);
-                    message = 'Get '+params.Key.id;
-                }
-                callback(null, util.getCallbackBody(success, status, message));
+        module.exports.fetch(customerId, function(err, data) {
+            console.log(err);
+            console.log(data);
+            if (err) {
+                callback(null, util.getCallbackBody(false, 200, error.toString()));
             }
             else {
-                callback(null, util.getCallbackBody(true, 200, 'Customer retrieved', data.Item));
+                let item = data.length > 0 ? data[0] : null;
+                callback(null, util.getCallbackBody(true, 200, 'Customer retrieved', item));
             }
-          });
+        });
     }
     else {
         callback(null, util.getCallbackBody(false, 400, 'HTTP method not supprted: '+httpMethod));        
         return;
-    }
-    
+    }    
 };
 

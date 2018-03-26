@@ -1,6 +1,7 @@
 'use strict';
 const auth = require("../utils/auth");
 const util = require("../utils/util");
+const customer = require("../handlers/customer");
 const constants = require("../utils/constants");
 const superagent = require('superagent');
 const moment = require('moment');
@@ -135,50 +136,66 @@ module.exports.drop = (event, context, callback) => {
     });
 };
 
+function importCustomerCallLogs(customer, fromDate) {
+    if (!customer) {
+        return util.getCallbackBody(false, 404,  'Customer not found');
+    }
+    else if (customer.active == false) {
+        return util.getCallbackBody(false, error.statusCode || 501,  'Customer is not active');
+    }
+    else if (!customer.phoneApiToken || !customer.phoneAccountId) {
+        return util.getCallbackBody(false, error.statusCode || 401, 'Customer is missing voip access keys');
+    }
+    else {
+        // these are globals to request
+        const phoneApiToken = customer.phoneApiToken, 
+            phoneAccountId = customer.phoneAccountId, 
+            header = 'Bearer '+phoneApiToken,
+            toDate = moment(fromDate).add(1, 'days'),
+            url = 'https://api.phone.com/v4/accounts/'+phoneAccountId+'/call-logs?filters[start_time]=between:'+fromDate.unix()+','+toDate.unix()+'&limit='+PAGE_SIZE;
+        // begin async API query for call logs
+        fetchCallLogs(url, header, 0);
+        // end loop through days
+        return util.getCallbackBody(true, 200, 'Imported call logs for account '+phoneAccountId + ' from '+fromDate.toString() + ' to '+toDate.toString());					
+    }    
+}
+
 module.exports.import = (event, context, callback) => {
 	console.log(event);
-	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null,
-		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
+	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null;
 	if (!customerId) {
 		callback(null, util.getCallbackBody(false, error.statusCode || 400, 'Customer id missing'));
 		return;
-	}		
-	dynamoDb.get({ TableName: dynamoDbTable, Key: { id: customerId } }, (error, data) => { // get customer record
-		if (error) {
-			console.error(error);
-			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));
-			return;
-		}
-		else if (!data.Item) {
-			callback(null, util.getCallbackBody(false, 404,  'Customer not found'));
-		}
-		else if (data.Item.active == false) {
-			console.error(error);
-			callback(null, util.getCallbackBody(false, error.statusCode || 501,  'Customer is not active'));
-			return;
-		}
-		else if (!data.Item.phoneApiToken || !data.Item.phoneAccountId) {
-			console.error(error);
-			callback(null, util.getCallbackBody(false, error.statusCode || 401, 'Customer is missing voip access keys'));
-			return;
-		}
-		else {
-			// these are globals to request
-			const phoneApiToken = data.Item.phoneApiToken, 
-                phoneAccountId = data.Item.phoneAccountId, 
-                header = 'Bearer '+phoneApiToken,
-				fromPrm = (event.queryStringParameters ? event.queryStringParameters.date : null),
-                fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now).set({hour:0,minute:0,second:0,millisecond:0}).add(-1, 'days'),
-                toDate = moment(fromDate).add(1, 'days'),
-                rangeString = fromDate.format('YYYY-MM-DD') + ' to '+toDate.format('YYYY-MM-DD'),
-                url = 'https://api.phone.com/v4/accounts/'+phoneAccountId+'/call-logs?filters[start_time]=between:'+fromDate.unix()+','+toDate.unix()+'&limit='+PAGE_SIZE;
-            
-            console.log(' querying phone API for call logs for ' + phoneAccountId + ' between '+rangeString);
-            // begin async API query for call logs
-            fetchCallLogs(url, header, 0);
-            // end loop through days
-            callback(null, util.getCallbackBody(true, 200, 'Imported call logs for account '+phoneAccountId + ' from '+fromDate.toString() + ' to '+toDate.toString()));					
-		}
-	});
-
+    }
+    const fromPrm = (event.queryStringParameters ? event.queryStringParameters.date : null),
+        fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now).set({hour:0,minute:0,second:0,millisecond:0}).add(-1, 'days'),
+        dynamoDbTable = constants.DYNAMODB_TABLES.customers;
+    dynamoDb.get({ TableName: dynamoDbTable, Key: { id: customerId } }, (error, data) => { // get customer record
+        if (error) {
+            console.error(error);
+            util.getCallbackBody(false, error.statusCode || 501, error.toString());
+            return;
+        }
+        callback(null, importCustomerCallLogs(data.Item, fromDate));
+    });
 };
+
+module.exports.importAll = (event, context, callback) => {
+    console.log('calllog.importAll');
+    const fromPrm = (event.queryStringParameters ? event.queryStringParameters.date : null),
+        fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now).set({hour:0,minute:0,second:0,millisecond:0}).add(-1, 'days');
+    customer.fetch(null, function(err, data) {
+        if (err) {
+            callback(null, util.getCallbackBody(true, 400, err));
+        }
+        else {
+            data.forEach(function(customer){
+                console.log('importing for ' + customer.customerName+ ' on '+fromDate.format('MM/DD/YYYY'));
+                if (customer.phoneAccountId && customer.phoneApiToken) {
+                    importCustomerCallLogs(customer, fromDate);                
+                }
+            });
+            callback(null, util.getCallbackBody(true, 200, 'Importing all all customer call logs'));
+        }
+    });
+};    

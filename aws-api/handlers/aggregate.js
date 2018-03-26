@@ -1,5 +1,6 @@
 'use strict';
 const auth = require("../utils/auth");
+const customer = require("../handlers/customer");
 const constants = require("../utils/constants");
 const util = require("../utils/util");
 const moment = require('moment');
@@ -100,6 +101,7 @@ module.exports.fetchVenueDailyTotals = (event, context, callback) => {
 		}
 	});
 }
+
 module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 	console.log(event);
 	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null,
@@ -133,42 +135,41 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 				privateKey = data.Item.purplePrivateKey, //'fcc4780fc12bdf89e0bc81371e45d9b3',
 				fromPrm = (event.queryStringParameters ? event.queryStringParameters.from : null),
 				toPrm = (event.queryStringParameters ? event.queryStringParameters.to : null),
-				fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment().add(-7, 'days'),
+				fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment().add(-1, 'days'),
 				toDate = toPrm ? moment(toPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now)
 				;
+			// being async db query
+			const now = new Date(), // for timestamping request
+				pth = '/api/company/v1/venues',
+				ath = auth.getAuthInfo(publicKey, privateKey, pth, now),
+				hdr = ath.header,
+				portalD = ath.portalDomain,
+				u = 'https://'+portalD+pth;
 
-			dynamoDbTable = constants.DYNAMODB_TABLES.venues; // switch to venues table
-			// query for customer venues
-			const venueParams = {
-				TableName : dynamoDbTable,
-				KeyConditionExpression: "customerId = :customerId",
-				IndexName: dynamoDbTable+'-customer-index',
-				ExpressionAttributeValues: { ":customerId":customerId }
-			}; 
-			// being aync db query
-			dynamoDb.query(venueParams, function(err, data) {
-				if (err) {
-					console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
-				} else {
-					dynamoDbTable = constants.DYNAMODB_TABLES.venueDailyTotals; // switch to daily aggregates table
-					// begin loop through venues				
-					data.Items.forEach(function(item) {
+			req
+			.get(u)
+			.accept('application/json')
+			.retry(2) // retry a couple times incase of 502
+			.set('Host', portalD).set('Content-Type', 'application/json').set('Content-Length', '0').set('Date', now.toUTCString()) // these are standard headers
+			.set('X-API-Authorization', hdr) // special purple API auth header
+			.then(function(res) {
+				if (res.body && res.body.data && res.body.data.venues) {
+					res.body.data.venues.forEach(function(item) {
 						let newFrom = moment(fromDate),
 							count = 0;
 						// begin loop through days
 						while ((newFrom.isBefore(toDate) || newFrom.isSame(toDate) )) {
 							// local to the loop
-							let now = new Date(), // for timestamping request
-								thisFrom = moment(newFrom),
-								path = '/api/company/v1/venue/'+item.externalId+'/visitors?customerId='+ customerId+ '&from='+thisFrom.format('YYYYMMDD')+'&to='+thisFrom.format('YYYYMMDD'),
+							let thisFrom = moment(newFrom),
+								path = '/api/company/v1/venue/'+item.id+'/visitors?from='+thisFrom.format('YYYYMMDD')+'&to='+thisFrom.format('YYYYMMDD'),
 								authInfo = auth.getAuthInfo(publicKey, privateKey, path, now),
 								header = authInfo.header,
 								portalDomain = authInfo.portalDomain,
 								url = 'https://'+portalDomain+path,
-								externalId = item.externalId,
+								externalId = item.id,
 								name = item.name,
 								fromString2 = thisFrom.format('YYYY-MM-DD');
-							console.log(' querying purple API for ' + item.externalId + ' on '+fromString2);
+							console.log(' querying purple API for venue ' + item.id + ' on '+fromString2);
 							// begin async API query for visitors
 							req
 								.get(url)
@@ -178,7 +179,7 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 								.set('X-API-Authorization', header) // special purple API auth header
 								.then(function(res) {
 									//console.log(res);
-									let msg = 'Venues not found',
+									let msg = 'Visitors not found',
 										successCount = 0;
 									if (res.body && res.body.data && res.body.data.visitors) {
 										let visitors = res.body.data.visitors,
@@ -234,7 +235,7 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 									}
 								})
 								.catch((error) => {
-									console.log(error);
+									//console.log(error);
 									if (error.status == 404) {
 										console.log('No visitors to '+ externalId + ' for '+fromString2);
 									}
@@ -261,12 +262,38 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 						}
 						// end loop through days
 					});
-					// end loop through venues
-					callback(null, util.getCallbackBody(true, 200, 'Aggregated visitors for '+data.Items.length + ' venues from '+fromDate.toString() + ' to '+toDate.toString()));					
+					callback(null, util.getCallbackBody(true, 200, 'Aggregated visitors for venues from '+fromDate.toString() + ' to '+toDate.toString()));					
 				}
+				else {
+					console.log('No venues for '+ customerId);
+					callback(null, util.getCallbackBody(true, 404, 'No venues for '+customerId));					
+				}				
+			})
+			.catch((error) => {
+				console.log(error);
+				callback(null, util.getCallbackBody(true, 400, error.toString()));					
 			});
-			// en d async db query
 		}
 	});
 };
 
+module.exports.calculateAllVenuesDailyTotals = (event, context, callback) => {
+    console.log('aggregate.calculateAllVenuesDailyTotals');
+	event.queryStringParameters = event.queryStringParameters || {};
+    customer.fetch(null, function(err, data) {
+        if (err) {
+            callback(null, util.getCallbackBody(true, 400, err));
+        }
+        else {
+            data.forEach(function(customer){
+                if (customer.purpleAccountId && customer.purplePublicKey && customer.purplePrivateKey) {
+					console.log('importing for ' + customer.customerName);
+					event.queryStringParameters.customerId = customer.id;
+					module.exports.calculateVenuesDailyTotals(event, context, callback);
+                }
+			});			
+            callback(null, util.getCallbackBody(true, 200, 'Aggregating all customer venue daily totals'));
+        }
+    });
+	
+};	

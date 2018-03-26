@@ -68,7 +68,6 @@ table.table-fixed thead tr th {
             <div class="form-group row" id="store-section">
                 <label for="name" class="col-sm-2">Admin</label>
                 <div class="col-sm-10">
-                    <button class="btn btn-warning" type="button" id="store-venues">Store All Wifi Venues</button>                                         
                     <button class="btn btn-warning" type="button" id="store-customers">Store Customer Configurations</button>
                     <div class="btn-group">
                         <button type="button" id="store-all" data-days="30" class="btn btn-warning">Aggregate Wifi Guests Since <span id="visitor-days2"></span></button>
@@ -162,15 +161,6 @@ table.table-fixed thead tr th {
                 });
                 //alert('Done');
             }
-            function storeVenues() {
-                var p = '/api/company/v1/venues';
-                $.ajax(purpleStore + '?customerId=4286&dataField=venues&path='+p)
-                .done(function(responseObj) {
-                    console.log(responseObj);
-                    $('#output').text(JSON.stringify(responseObj, null, 2));
-                });
-                //alert('Done!');
-            }
             function requestAggs(s, e) {
                 let now = new Date();
                 if(s.isBefore(now)) {
@@ -229,9 +219,6 @@ table.table-fixed thead tr th {
                     aggregateVisitors();
                 });
 
-                $('#store-venues').on('click', function() {
-                    storeVenues();
-                });
                 $('#store-customers').on('click', function() {
                     storeCustomers();
                 });
