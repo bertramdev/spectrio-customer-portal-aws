@@ -13,6 +13,8 @@ AWS.config.region = constants.REGION;
 
 const path = require('path');
 const PAGE_SIZE = 250;
+const sns = new AWS.SNS();
+
 /* == Globals == */
 const esDomain = {
     region: constants.REGION,
@@ -136,7 +138,7 @@ module.exports.drop = (event, context, callback) => {
     });
 };
 
-function importCustomerCallLogs(customer, fromDate) {
+function importCustomerCallLogs(customer, fromDate, toDate) {
     if (!customer) {
         return util.getCallbackBody(false, 404,  'Customer not found');
     }
@@ -148,10 +150,10 @@ function importCustomerCallLogs(customer, fromDate) {
     }
     else {
         // these are globals to request
+        toDate = toDate || moment(fromDate).add(1, 'days');
         const phoneApiToken = customer.phoneApiToken, 
             phoneAccountId = customer.phoneAccountId, 
             header = 'Bearer '+phoneApiToken,
-            toDate = moment(fromDate).add(1, 'days'),
             url = 'https://api.phone.com/v4/accounts/'+phoneAccountId+'/call-logs?filters[start_time]=between:'+fromDate.unix()+','+toDate.unix()+'&limit='+PAGE_SIZE;
         // begin async API query for call logs
         fetchCallLogs(url, header, 0);
@@ -161,38 +163,58 @@ function importCustomerCallLogs(customer, fromDate) {
 }
 
 module.exports.import = (event, context, callback) => {
-	console.log(event);
-	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null;
-	if (!customerId) {
-		callback(null, util.getCallbackBody(false, error.statusCode || 400, 'Customer id missing'));
-		return;
+    console.log(event);
+    var prmSet = []
+    if (event.Records) {
+        event.Records.forEach(function(rec) {
+            if (rec.Sns) prmSet.push(JSON.parse(rec.Sns.Message));
+        });
     }
-    const fromPrm = (event.queryStringParameters ? event.queryStringParameters.date : null),
-        fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now).set({hour:0,minute:0,second:0,millisecond:0}).add(-1, 'days'),
-        dynamoDbTable = constants.DYNAMODB_TABLES.customers;
-    dynamoDb.get({ TableName: dynamoDbTable, Key: { id: customerId } }, (error, data) => { // get customer record
-        if (error) {
-            console.error(error);
-            util.getCallbackBody(false, error.statusCode || 501, error.toString());
+    else{
+        prmSet.push(event.queryStringParameters);
+    }
+    prmSet.forEach(function(prms){
+        var customerId = (prms ? prms.customerId : null);
+        
+        if (!customerId) {
+            callback(null, util.getCallbackBody(false, error.statusCode || 400, 'Customer id missing'));
             return;
         }
-        callback(null, importCustomerCallLogs(data.Item, fromDate));
+        const fromPrm = (prms ? prms.from : null),
+            fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now).set({hour:0,minute:0,second:0,millisecond:0}).add(-1, 'days'),
+            toPrm = (prms ? prms.to : null),
+            toDate = fromPrm ? moment(toPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now).set({hour:0,minute:0,second:0,millisecond:0}),
+            dynamoDbTable = constants.DYNAMODB_TABLES.customers;
+        dynamoDb.get({ TableName: dynamoDbTable, Key: { id: customerId } }, (error, data) => { // get customer record
+            if (error) {
+                console.error(error);
+                callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));
+                return;
+            }
+            importCustomerCallLogs(data.Item, fromDate, toDate);
+        });
     });
+    callback(null, util.getCallbackBody(true, 200, 'Importing call logs'));
 };
 
 module.exports.importAll = (event, context, callback) => {
     console.log('calllog.importAll');
-    const fromPrm = (event.queryStringParameters ? event.queryStringParameters.date : null),
-        fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now).set({hour:0,minute:0,second:0,millisecond:0}).add(-1, 'days');
     customer.fetch(null, function(err, data) {
         if (err) {
             callback(null, util.getCallbackBody(true, 400, err));
         }
         else {
             data.forEach(function(customer){
-                console.log('importing for ' + customer.customerName+ ' on '+fromDate.format('MM/DD/YYYY'));
                 if (customer.phoneAccountId && customer.phoneApiToken) {
-                    importCustomerCallLogs(customer, fromDate);                
+                    let msg = {
+                        customerId: customer.id,
+                        from: event.queryStringParameters ? event.queryStringParameters.from : null,
+                        to: event.queryStringParameters ? event.queryStringParameters.to : null
+                    }         
+                    console.log('triggering importing for ' + customer.customerName+ ' from '+msg.from+ ' to '+msg.to);
+                    sns.publish({ Message:JSON.stringify(msg), TopicArn: process.env.IMPORT_CALL_LOGS_TOPIC }, (error) => {
+                        if (error) console.error(error);
+                    });
                 }
             });
             callback(null, util.getCallbackBody(true, 200, 'Importing all all customer call logs'));

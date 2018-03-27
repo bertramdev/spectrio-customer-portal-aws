@@ -17,6 +17,25 @@ provider:
     STAGE: dev
     ELASTIC_URL:
       Fn::GetAtt: [ CallLogESIndex , DomainEndpoint ]
+    IMPORT_CALL_LOGS_TOPIC:
+      Fn::Join:
+        - ":"
+        - - arn
+          - aws
+          - sns
+          - Ref: AWS::Region
+          - Ref: AWS::AccountId
+          - importCallLogs
+    AGGREGATE_VISITORS_TOPIC:
+      Fn::Join:
+        - ":"
+        - - arn
+          - aws
+          - sns
+          - Ref: AWS::Region
+          - Ref: AWS::AccountId
+          - aggregateVisitors
+      
   region: ${self:provider.environment.REGION}
   iamRoleStatements:
     - Effect: Allow
@@ -27,7 +46,10 @@ provider:
       Action:
         - "es:*"
       Resource: "*"
-
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - "sns:*"
 functions:
   purpleProxy:
     handler: /handlers/proxy.default
@@ -54,6 +76,7 @@ functions:
           path: purpleAggregateVenueVisitors
           method: get
           cors: true
+      - sns: aggregateVisitors
   purpleAggregateAllCustomerVisitors:
     handler: /handlers/aggregate.calculateAllVenuesDailyTotals
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateAllCustomerVisitors
@@ -63,7 +86,7 @@ functions:
           path: purpleAggregateAllVenueVisitors
           method: get
           cors: true
-#      - schedule: rate(1 day)
+      - schedule: rate(1 day)
   purpleFetchVenueDailyTotals:
     handler: /handlers/aggregate.fetchVenueDailyTotals
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleFetchVenueDailyTotals
@@ -129,6 +152,7 @@ functions:
           path: callLogImport
           method: get
           cors: true
+      - sns: importCallLogs
   callLogImportAll:
     handler: /handlers/calllog.importAll
     name: ${self:service}-${opt:stage, self:provider.stage}-call-log-import-all
@@ -329,4 +353,4 @@ resources:
           InstanceCount: 1
           DedicatedMasterEnabled: false
           ZoneAwarenessEnabled: false
-        ElasticsearchVersion: 5.3        
+        ElasticsearchVersion: 5.3
