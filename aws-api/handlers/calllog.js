@@ -159,6 +159,199 @@ module.exports.search = (event, context, callback) => {
     });
 };
 
+function formatTimezoneOffset(offset) {
+    offset = offset || 0;
+    return (offset<0? '-':'+')+('0' + Math.abs(offset)).substr(-2)+':00'; 
+}
+
+function getDayName(day) {
+    return constants.DAY_NAMES[day];
+}
+function getHourName(hour) {
+    if (hour == 0) return '12AM to 1AM';
+    else if (hour == 11)  return '11AM to 12AM';
+    else if (hour == 12)  return '12PM to 1PM';
+    else if (hour == 23) return '11PM to 12AM';
+    else if (hour < 11) return hour+'AM to '+(hour+1)+ 'AM';
+    else return (hour-12)+'PM to '+(hour-11)+ 'PM';
+}
+
+function formatMinuteRange(fromSec, toSec) {
+    let output;
+    if (!fromSec) {
+        output = 'Less than ';
+        let toMin = toSec / 60;
+        output += toMin + ' minute'+(toMin > 1 ?'s':'');
+    }
+    else if (!toSec) {
+        output = 'Over ';
+        let fromMin = fromSec / 60;
+        output += fromMin + ' minute'+(fromMin > 1?'s':'');
+    }
+    else {
+        output = 'From ';
+        let fromMin = fromSec / 60;
+        output += fromMin + ' minute'+(fromMin > 1?'s to ':' to ');
+        let toMin = toSec / 60;
+        output += toMin +' minute'+(toMin > 1?'s':'');
+    }
+    return output;
+}
+
+module.exports.aggregate = (event, context, callback) => {
+	console.log(event);
+
+	let customerId = (event.queryStringParameters ? event.queryStringParameters.customerId : null),
+		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
+	if (!customerId) {
+		callback(null, util.getCallbackBody(false, 400, 'Customer Id could not be found'));
+		return;
+	}
+
+	const params = {
+		TableName: dynamoDbTable,
+		Key: {
+			id: customerId
+		}
+	};
+        
+	dynamoDb.get(params, (error, data) => {
+		if (error) {
+			console.error(error);
+			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));			
+			return;
+		}
+		else if (data.Item.active == false) {
+			callback(null, util.getCallbackBody(false, 401, 'Customer is not active'));
+			
+			return;
+		}
+		else if (!data.Item.phoneAccountId || !data.Item.phoneApiToken) {
+			callback(null, util.getCallbackBody(false, 403, 'Customer is missing phone access keys'));
+			return;
+		}
+		else {
+            let fromPrm = (event.queryStringParameters ? event.queryStringParameters.from : moment().add(-7, 'days').format('YYYYMMDD')),
+                toPrm = (event.queryStringParameters ? event.queryStringParameters.to : moment(constants.MOMENTS.now).format('YYYYMMDD')),
+                extensionId = (event.queryStringParameters ? event.queryStringParameters.extensionId : null),
+                tzOffsetString = formatTimezoneOffset(customer.timeZoneOffset);
+            let query = {
+                "query": {
+                    "bool": {
+                        "must": [ {
+                            "range" : {
+                                "start_time" : {
+                                    "gte": fromPrm,
+                                    "lte": toPrm,
+                                    "format": "yyyyMMdd",
+                                    "time_zone":tzOffsetString
+                                }
+                            }
+                        } ]
+                    }
+                }, 
+                "size":0, 
+                "aggs" : {
+                    "avg_call_duration" : { 
+                        "avg" : { 
+                            "field" : "call_duration"
+                        } 
+                    },
+                    "call_duration_ranges" : {
+                        "range" : {
+                            "field" : "call_duration",
+                            "ranges" : [
+                                { "to" : 60.0 },
+                                { "from" : 60.0, "to" : 300.0 },
+                                { "from" : 300.0, "to" : 900.0 },
+                                { "from" : 900.0, "to" : 1800.0 },
+                                { "from" : 1800.0, "to" : 3600.0 },
+                                { "from" : 3600.0 }
+                            ]
+                        }
+                    },
+                    "calls_over_time" : {
+                        "date_histogram" : {
+                            "field" : "start_time",
+                            "interval" : "day",
+                            "time_zone": tzOffsetString
+                        },
+                        "aggs": {
+                            "date_avg_call_duration" : { 
+                                "avg" : { 
+                                    "field" : "call_duration"
+                                }
+                            }
+                        }
+                    },
+                    "hour_count" : {
+                        "histogram" : {
+                            "field" : "start_hour",
+                            "interval": 1
+                        }
+                    },
+                    "day_count" : {
+                        "histogram" : {
+                            "field" : "start_day",
+                            "interval": 1
+                        }
+                    },
+                    "direction_count" : {
+                        "terms" : {
+                            "field" : "direction"
+                        }
+                    }
+                }
+            };
+            if (extensionId) {
+                query.query.bool.must.push({"term":{"extension.id":parseInt(extensionId)}});
+            }
+            searchES(customerId, query, (err, respBody) => {
+                let output = {
+                        calls_over_time:[['Day','Count','Average Duration']],
+                        hour_count:[['Hour','Count']],
+                        avg_call_duration:0,
+                        direction_count:[['Direction', 'Count']],
+                        call_duration_ranges:[['Range', 'Count']],
+                        day_count:[['Day','Count']],
+                    },
+                    meta = {total:0, from:fromPrm, to:toPrm};
+                if (respBody) {
+                    let body = respBody instanceof String ? JSON.parse(respBody) : respBody;
+                    if (body.hits) {
+                        meta.total = body.hits.total;
+                        output.avg_call_duration = body.aggregations.avg_call_duration.value;
+                        ['direction_count','hour_count','day_count'].forEach(function(fld){
+                            body.aggregations[fld].buckets.forEach(function(itm){
+                                let key = itm.key;
+                                if (fld == 'day_count') key = getDayName(itm.key);
+                                else if (fld == 'hour_count') key = getHourName(itm.key);
+                                output[fld].push([key,itm.doc_count]);
+                            });
+                        });
+                        body.aggregations.calls_over_time.buckets.forEach(function(itm){
+                            let m = moment(itm.key);
+                            if (customer.timeZoneOffset) m.utcOffset(customer.timeZoneOffset)
+                            let key = m.format('MMM D');
+                            output.calls_over_time.push([key, itm.doc_count, itm.date_avg_call_duration.value]);
+                        });
+                        body.aggregations.call_duration_ranges.buckets.forEach(function(itm){
+                            let key = formatMinuteRange(itm.from, itm.to);
+                            output.call_duration_ranges.push([key, itm.doc_count]);
+                        });
+                    }
+                    else {
+                        meta.total = 0;
+                    }
+                }        
+                callback(null, util.getCallbackBody(true, 200, 'Aggregation completed', output, meta));
+            });
+                    
+		}
+	});
+
+};
+
 module.exports.post = (event, context, callback) => {
     const item = JSON.parse(event.body);//.replace(/""/g, 'null'));
     const customerId = event.queryStringParameters.customerId;

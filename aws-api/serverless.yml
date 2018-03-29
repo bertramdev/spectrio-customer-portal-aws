@@ -129,6 +129,15 @@ functions:
           path: callLogSearch
           method: post
           cors: true
+  callLogAggregate:
+    handler: /handlers/calllog.aggregate
+    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-aggregate
+    timeout: 29
+    events:
+      - http:
+          path: callLogAggregate
+          method: get
+          cors: true
   callLogPost:
     handler: /handlers/calllog.post
     name: ${self:service}-${opt:stage, self:provider.stage}-call-log-post

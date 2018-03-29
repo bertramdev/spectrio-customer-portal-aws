@@ -34,6 +34,7 @@ module.exports.esDomain = {
     log: 'error',
     connectionClass: require('http-aws-es')
 };
+module.exports.DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 module.exports.CALL_LOG_MAPPINGS = {
 	"call_log" : {

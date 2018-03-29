@@ -8,7 +8,9 @@
 		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>        
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>        
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+		
 		<style>
 .table-fixed {
 	width: 100%;
@@ -82,6 +84,18 @@ table.table-fixed thead tr th {
 
 		<div class="container-fluid">
 		<div class="row" id="metrics-section">
+			<label class="col-sm-2">Customers</label>
+			<div class="col-sm-10">
+				<div class="pb-2">
+					<select class="form-control" id="customer-select" name="customer">
+						<option value="4286" selected>Spectrio</option>
+						<option value="1335221">LabCorp</option>
+					</select>
+				</div>
+			</div>
+		</div>
+
+		<div class="row" id="metrics-section">
 			<label class="col-sm-2">Extensions</label>
 			<div class="col-sm-10">
 				<div class="pb-2">
@@ -91,41 +105,93 @@ table.table-fixed thead tr th {
 				</div>
 			</div>
 		</div>
-		<div class="row pb-2" id="metrics-section">
-			<label class="col-sm-2">Call Logs</label>
-			<div class="col-sm-10">
-				
-                <div class="card-deck">
-                    <div class="card call-log-card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title text-white" id="1day">--</h2>
-							<div class="small text-white export-link" data-days="1">Export</div>
+
+		<div class="row pb-2 pt-2" id="agg-section">
+                <label for="" class="col-sm-2">Analytics</label>
+                <div class="col-sm-10">
+                    <div style="text-align:center" class="pb-1">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons" id="agg-days">
+                        <label class="btn btn-secondary btn-sm">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days1" autocomplete="off" value="1"> 1d
+                        </label>
+                        <label class="btn btn-secondary btn-sm">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days3" autocomplete="off" value="3"> 3d
+                        </label>
+                        <label class="btn btn-secondary btn-sm active">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days7" autocomplete="off" checked="true" value="7"> 7d
+                        </label>
+                        <label class="btn btn-secondary btn-sm">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days14" autocomplete="off" value="14"> 14d
+                        </label>    
+                        <label class="btn btn-secondary btn-sm">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days30" autocomplete="off" value="30"> 30d
+                        </label>    
+                        <label class="btn btn-secondary btn-sm">
+                            <input class="export-btn" disabled="true" type="radio" name="agg-days" id="days60" autocomplete="off" value="60"> 60d
+                        </label>    
+                    </div>
+                    </div>
+					<div class="card-deck">
+							<div class="card call-log-card">
+								<div class="card-header bg-light">
+									Calls over time
+								</div>
+								<div class="card-body">
+									<div id="calls-line" style="width: 100%; height: 300px;"></div>
+								</div>
+							</div>
+						</div>
+					</div>		
+				</div>
+				<div class="row pb-2" id="agg-section2">
+					<div class="col-sm-10 offset-sm-2">
+						<div class="card-deck">
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                 Total Calls
+                            </div>
+                            <div class="card-body text-center" style="padding-top:60px">
+                                <span id="call-total" style="font-size:160px; font-weight:800;line-height:.95;">--</span>
+                                <br/>
+                                <span style="font-size:16px; font-weight:400;"><span id="call-avg-duration">--</span> seconds avg duration</span>                                
+                                <br/>
+                                <button type="button" id="export-logs" class="export-btn btn btn-primary btn-sm mt-4 export-link" disabled="true"  data-days="7">Export Call Logs</button>
+                            </div>
                         </div>
-                        <div class="card-footer bg-light">
-							Total Calls Last 24 Hours
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                Incoming/Outgoing
+                            </div>
+                            <div class="card-body">
+                                <div id="direction-pie" style="width: 100%; height: 300px;"></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="card call-log-card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title text-white" id="7days">--</h2>
-							<div class="small text-white export-link" data-days="7">Export</div>
+                </div>		
+            </div>
+            <div class="row pb-2" id="agg-section2">
+                <div class="col-sm-10 offset-sm-2">
+                    <div class="card-deck">
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                Time of Day
+                            </div>
+                            <div class="card-body">
+                                <div id="hour-pie" style="width: 100%; height: 300px;"></div>
+                            </div>
                         </div>
-                        <div class="card-footer bg-light">
-                            Total Calls Last 7 <nobr>days&nbsp;&nbsp;</nobr>
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                Day of Week
+                            </div>
+                            <div class="card-body">
+                                <div id="day-pie" style="width: 100%; height: 300px;"></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="card call-log-card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title text-white" id="30days">--</h2>
-							<div class="small text-white export-link" data-days="30">Export</div>
-                        </div>
-                        <div class="card-footer bg-light">
-                            Total Calls Last 30 days
-                        </div>
-                    </div>
-                </div>
-			</div>		
-		</div>
+                </div>		
+            </div>
+
 		<form>
 			<!--div class="form-group row">
 				<label for="name" class="col-sm-2">Billing Contact</label>
@@ -206,7 +272,8 @@ table.table-fixed thead tr th {
 		<script>
             var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
 			var customerURL = 'https:/'+proxyHost+'/dev/customer';
-			var customerId = 4286;//4286 1335221
+			var aggregateURL = 'https:/'+proxyHost+'/dev/callLogAggregate';
+			var customerId;
 			var accountId;
 			var lastOffset = 0;
 			var headers;
@@ -372,9 +439,10 @@ table.table-fixed thead tr th {
 					localStorage.call_logs = '';
 				}
 				let csv = 'id,type,called_number,extension,caller_id,start_time,call_duration,final_action\n';
+				let startUnix = (moment().subtract(days,'d').startOf('day').unix());
 				let fetchFxn = function(offset) {
 					offset = offset || 0;
-					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?offset='+offset+'&limit='+PAGE_SIZE+'&filters[start_time]=gt:'+(moment().subtract(days,'d').unix())+extFilter, {
+					$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?offset='+offset+'&limit='+PAGE_SIZE+'&filters[start_time]=gt:'+startUnix+extFilter, {
 						headers: headers
 					})
 					.done(function(data) {
@@ -404,35 +472,56 @@ table.table-fixed thead tr th {
             }
 
 			function loadMetrics() {
-				$('#7days,#30days,#1day').text('--');
 				let extId = $('#extensions-select').val();
 				
 				let extFilter = '';
 				if (extId != '-1') {
-					extFilter += '&filters[extension]='+extId;
+					extFilter += '&extensionId='+extId;
 				}
+				let days = parseInt($('[name="agg-days"]:checked').val());
+				let m = moment().add(-1*(days), 'days').startOf('day');
+				let fromFilter = '&from='+m.format('YYYYMMDD')+'&to='+moment().add(5,'day').format('YYYYMMDD');
 				
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(7,'d').unix())+extFilter, {
-					headers: headers
-				})
+				$('.export-btn').attr('disabled','true');
+				$('#export-logs').attr('data-days', days);
+				$.ajax(aggregateURL+'?customerId='+customerId+extFilter+fromFilter)
 				.done(function(data) {
-					$('#7days').text(data.total);
+					$('#call-total').text(data.meta.total);
+					$('#call-avg-duration').text(Math.round(data.data.avg_call_duration));
+					let chart = new google.visualization.PieChart(document.getElementById('hour-pie'));
+                    chart.draw(google.visualization.arrayToDataTable(data.data.hour_count));
+					chart = new google.visualization.PieChart(document.getElementById('day-pie'));
+                    chart.draw(google.visualization.arrayToDataTable(data.data.day_count));
+					chart = new google.visualization.PieChart(document.getElementById('direction-pie'));
+                    chart.draw(google.visualization.arrayToDataTable(data.data.direction_count));
+					var materialOptions = {
+						series: {
+							0: {axis: 'Count'},
+							1: {axis: 'Duration'}
+						},
+						axes: {
+							y: {
+								Count: {label: 'Count'},
+								Duration: {label: 'Duration'}
+							}
+						}
+					};
+					let dataTable = new google.visualization.DataTable();
+					dataTable.addColumn('string', 'Day');
+					dataTable.addColumn('number', "Count");
+					dataTable.addColumn('number', "Duration");
+					data.data.calls_over_time.shift();
+					if (data.data.calls_over_time.length)
+						dataTable.addRows(data.data.calls_over_time);
+					chart = new google.charts.Line(document.getElementById('calls-line'));
+					chart.draw(dataTable, materialOptions);
+					$('.export-btn').removeAttr('disabled');
 				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(1,'d').unix())+extFilter, {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#1day').text(data.total);
-				});
-				$.ajax('https://api.phone.com/v4/accounts/'+accountId+'/call-logs?limit=1&filters[start_time]=gt:'+(moment().subtract(30,'d').unix())+extFilter, {
-					headers: headers
-				})
-				.done(function(data) {
-					$('#30days').text(data.total);
-				});				
+		
 			}
 
 			function loadData() {
+				customerId = parseInt($('#customer-select').val());
 				$.ajax(customerURL+'/'+customerId)
 				.done(function(respObj) {
 					if (respObj && respObj.success) {
@@ -443,6 +532,8 @@ table.table-fixed thead tr th {
 							headers: headers
 						})
 						.done(function(data) {
+							$('#extensions-select').empty();
+							$('#extensions-select').append('<option value="-1">All Extensions</option>');
 							$.each(data.items, function(idx, itm) {
 								$('#extensions-select').append('<option value="'+itm.id+'">'+itm.extension+' - '+itm.name+'</option>');
 							});
@@ -462,6 +553,8 @@ table.table-fixed thead tr th {
                 else {
                     loadData();
 				}
+                $('[name="agg-days"]').on('change', loadMetrics);
+				$('#customer-select').on('change', loadData);
 				$('#extensions-select').on('change', function(evt){
 					fetchVoiceMail(0);
 					loadMetrics();
@@ -512,7 +605,10 @@ table.table-fixed thead tr th {
 
 			});
 		</script>
-
+        <script type="text/javascript">
+			google.charts.load('current', {'packages':['line', 'corechart']});
+		</script>
+	
 	</body>
 
 </html>
