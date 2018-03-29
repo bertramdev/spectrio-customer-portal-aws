@@ -24,3 +24,155 @@ module.exports.MOMENTS = {
 
 module.exports.ELASTIC_URL = process.env.ELASTIC_URL;
 module.exports.REGION = process.env.REGION;
+
+
+module.exports.esDomain = {
+    region: module.exports.REGION,
+    endpoint: module.exports.ELASTIC_URL,
+    index: 'call_logs',
+    doctype: 'call_log',
+    log: 'error',
+    connectionClass: require('http-aws-es')
+};
+
+module.exports.CALL_LOG_MAPPINGS = {
+	"call_log" : {
+		"properties" : {
+			"id" : {
+				"type": "keyword",
+				"index": true
+            },
+			"caller_id" : {
+				"type": "text",
+				"index": true
+			},
+			"called_number" : {
+				"type": "text",
+				"index": true
+			},
+			"start_time" : {
+				"type" : "date"
+			},
+			"start_hour" : {
+				"type" : "integer"
+			},
+			"start_day" : {
+				"type" : "integer"
+			},
+			"start_time_epoch" : {
+				"type" : "long"
+			},
+			"created_at" : {
+				"type" : "date"
+			},
+			"created_at_epoch" : {
+				"type" : "long"
+			},
+			"direction" : {
+				"type": "keyword",
+				"index": true
+			},
+			"type" : {
+				"type": "keyword",
+				"index": true				
+			},
+			"call_duration" : {
+				"type" : "short"
+			},
+			"record_duration" : {
+				"type" : "short"
+			},
+			"is_monitored" : {
+				"type": "keyword",
+				"index": true
+			},
+			"call_number" : {
+				"type": "keyword",
+				"index": true
+			},
+			"final_action" : {
+				"type": "text",
+				"index": true
+			},
+			"voicemail_url" : {
+				"type": "keyword",
+				"index": false
+			},
+			"voicemail_cp_url" : {
+				"type": "keyword",
+				"index": false
+			},
+			"voicemail_transcript" : {
+				"type": "keyword",
+				"index": false
+			},
+			"call_recording_url" : {
+				"type": "keyword",
+				"index": false
+			},
+			"call_recording_cp_url" : {
+				"type": "keyword",
+				"index": false
+			},
+			"called_nickname" : {
+				"type": "text",
+				"index": true
+			},
+			"caller_cnam" : {
+				"type": "text",
+				"index": true
+			},
+			"extension": {
+                "type" : "object",
+                "properties": {
+                    "id" : {
+                        "type" : "long"
+                    },
+                    "name" : {
+						"type": "text",
+						"index": true
+					},
+                    "extension" : {
+                        "type" : "integer"
+                    },
+                    "voip_id" : {
+                        "type" : "integer"
+                    }
+                }
+            },
+            "details" : {
+                "type": "nested",
+                "properties" : {
+                    "id" : {
+                        "type" : "long"
+                    },
+                    "name" : {
+						"type": "text",
+						"index": true
+					},
+                    "called_number" : {
+						"type": "text",
+						"index": true
+					},
+                    "caller_id" : {
+						"type": "text",
+						"index": true
+					},
+                    "start_time" : {
+                        "type" : "long"
+                    },
+                    "start_time_ms" : {
+                        "type" : "date"
+                    },
+                    "type" : {
+						"type": "keyword",
+						"index": true
+					},
+                    "voip_id" : {
+                        "type" : "integer"
+                    }
+                }
+            }            
+		}
+	}
+};

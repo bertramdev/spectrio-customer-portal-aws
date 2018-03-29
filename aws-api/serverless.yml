@@ -12,11 +12,11 @@ provider:
     DYNAMODB_CUSTOMER_DAILY_TOTALS_TABLE: purple-${opt:stage, self:provider.stage}-customer-daily-totals
     DYNAMODB_VISITS_TABLE: purple-${opt:stage, self:provider.stage}-visits
     DYNAMODB_VISITORS_TABLE: purple-${opt:stage, self:provider.stage}-visitors
-    ELASTICSEARCH_CALL_LOG_INDEX: phone-${opt:stage, self:provider.stage}-call-logs
+    ELASTICSEARCH_CALL_LOG_INDEX: phone-${opt:stage, self:provider.stage}-calllogs
     REGION: us-east-1
     STAGE: dev
     ELASTIC_URL:
-      Fn::GetAtt: [ CallLogESIndex , DomainEndpoint ]
+      Fn::GetAtt: [ CallLogESDomain , DomainEndpoint ]
     IMPORT_CALL_LOGS_TOPIC:
       Fn::Join:
         - ":"
@@ -86,7 +86,7 @@ functions:
           path: purpleAggregateAllVenueVisitors
           method: get
           cors: true
-      - schedule: rate(1 day)
+      - schedule: cron(0 1 * * ? *)
   purpleFetchVenueDailyTotals:
     handler: /handlers/aggregate.fetchVenueDailyTotals
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleFetchVenueDailyTotals
@@ -117,13 +117,17 @@ functions:
           method: delete
           cors: true
   callLog:
-    handler: /handlers/calllog.get
+    handler: /handlers/calllog.search
     name: ${self:service}-${opt:stage, self:provider.stage}-call-log
     timeout: 29
     events:
       - http:
-          path: callLog
+          path: callLogSearch
           method: get
+          cors: true
+      - http:
+          path: callLogSearch
+          method: post
           cors: true
   callLogPost:
     handler: /handlers/calllog.post
@@ -132,6 +136,24 @@ functions:
     events:
       - http:
           path: callLogPost
+          method: get
+          cors: true
+  callLogInit:
+    handler: /handlers/calllog.init
+    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-init
+    timeout: 29
+    events:
+      - http:
+          path: callLogInit
+          method: get
+          cors: true
+  callLogUpdateMapping:
+    handler: /handlers/calllog.updateMapping
+    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-mapping
+    timeout: 29
+    events:
+      - http:
+          path: callLogMapping
           method: get
           cors: true
   callLogDrop:
@@ -162,7 +184,7 @@ functions:
           path: callLogImportAll
           method: get
           cors: true
-      - schedule: rate(1 day)
+      - schedule: cron(0 1 * * ? *)
 
 resources:
   Resources:
@@ -340,7 +362,7 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.DYNAMODB_VISITORS_TABLE}
-    CallLogESIndex:
+    CallLogESDomain:
       Type: "AWS::Elasticsearch::Domain"
       Properties: 
         DomainName: ${self:provider.environment.ELASTICSEARCH_CALL_LOG_INDEX}
@@ -353,4 +375,4 @@ resources:
           InstanceCount: 1
           DedicatedMasterEnabled: false
           ZoneAwarenessEnabled: false
-        ElasticsearchVersion: 5.3
+        ElasticsearchVersion: 6.2
