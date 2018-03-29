@@ -5,11 +5,11 @@ const customer = require("../handlers/customer");
 const constants = require("../utils/constants");
 const superagent = require('superagent');
 const moment = require('moment');
-
 const request = require('superagent');
 const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
 AWS.config.region = constants.REGION;
+
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 const path = require('path');
 const PAGE_SIZE = 250;
@@ -24,43 +24,36 @@ const elasticClient = new elasticsearch.Client({
     amazonES: { credentials: new AWS.EnvironmentCredentials('AWS') }
 });
 
-function initES(callback) {
-    elasticClient.indices.create({
-        index: constants.esDomain.index,
-        body: {
-            mappings: constants.CALL_LOG_MAPPINGS
-        }
-    }, callback);
-}
-
-function postToES(docs, tzOffset, callback) {
-    var body = [];
+function postToES(customerId, docs, tzOffset, callback) {
+    var body = [],
+        indices = {};
     docs.forEach(function(item) {
-        body.push({"index":{"_id":item.id, "_index": constants.esDomain.index, "_type":constants.esDomain.doctype}});
         if (item['@controls']) delete item['@controls'];
         if (item.extension && item.extension['@controls']) delete item.extension['@controls'];
-        if (item.start_time_epoch) {
-            let m = moment(1000*item.start_time_epoch);
-            if (tzOffset) m.utcOffset(tzOffset);
-            item.start_hour = m.hour();
-            item.start_day = m.day();
-        }
+        let m = moment(1000*item.start_time_epoch);
+        if (tzOffset) m.utcOffset(tzOffset);
+        item.start_hour = m.hour();
+        item.start_day = m.day();
         if (item.details) {
             item.details.forEach(function(detail){
                 if (detail.start_time) detail.start_time_ms = detail.start_time * 1000;
             });
         }
+        let indexName = constants.esDomain.index+'_'+customerId+'_'+m.format('YYYYMM');
+        body.push({"index":{"_id":item.id, "_index": indexName}});
         body.push(item);
     });
-    elasticClient.bulk({body: body}, callback);
+    elasticClient.bulk({refresh:true, type: constants.esDomain.doctype, body: body}, callback);
 }
 
-function searchES(query, callback) {
+function searchES(customerId, query, callback) {
     query = query || {"query": { "match_all": {} }, "size":20};
     if (query instanceof String) query = JSON.parse(query);
     elasticClient.search({
-        index: constants.esDomain.index,
+        index: constants.esDomain.index+'_'+customerId+'_*',
         type: constants.esDomain.doctype,
+        expandWildcards: 'all',
+        allowNoIndices: true,
         body: query
       }).then(function (resp) {
           console.log(resp);
@@ -71,12 +64,13 @@ function searchES(query, callback) {
       });
 }
 
-function dropES(callback) {
-    elasticClient.indices.delete({"index":constants.esDomain.index}, callback);
+function dropES(customerId, callback) {
+    let indexName = constants.esDomain.index + (customerId ? '_'+customerId+'_*' : '_*'); 
+    elasticClient.indices.delete({"index":indexName}, callback);
 }
 
 // page through 250 at a time
-function fetchCallLogs(url, header, offset, tzOffset) {
+function fetchCallLogs(customerId, url, header, offset, tzOffset) {
     offset = offset || 0;
     console.log(url+'&offset='+offset);
     superagent
@@ -90,7 +84,7 @@ function fetchCallLogs(url, header, offset, tzOffset) {
             if (res.body && res.body.items) {
                 let docs = res.body.items;
                 console.log(' found phone API '+docs.length+' call logs');
-                postToES(docs, tzOffset, (err, respBody) => {
+                postToES(customerId, docs, tzOffset, (err, respBody) => {
                     if (err) {
                         console.log(err);
                         console.log(' DID NOT save phone API '+docs.length+' call logs');
@@ -101,7 +95,7 @@ function fetchCallLogs(url, header, offset, tzOffset) {
                     console.log(respBody);
                 });
                 if (res.body.total > (offset + PAGE_SIZE)) { // keep pagings
-                    fetchCallLogs(url, header, (offset + PAGE_SIZE), tzOffset)
+                    fetchCallLogs(customerId, url, header, (offset + PAGE_SIZE), tzOffset)
                 }
             }
             else {
@@ -119,8 +113,33 @@ function fetchCallLogs(url, header, offset, tzOffset) {
         });
 }
 
+module.exports.init = (event, context, callback) => {
+    elasticClient.indices.putTemplate({
+        create:false,
+        name: 'call_log_index_template',
+        body: {
+            index_patterns: [constants.esDomain.index+"*"],
+            mappings: constants.CALL_LOG_MAPPINGS
+        }
+    }, function(err, respBody) {
+        if (err) {
+            console.log(err);
+            callback(null, util.getCallbackBody(true, 400, 'init failed: '+err));
+        }
+        else {
+            callback(null, util.getCallbackBody(true, 200, 'init completed: '+JSON.stringify(respBody)));
+        }                    
+    });
+
+};    
 module.exports.search = (event, context, callback) => {
-    searchES(event.body, (err, respBody) => {
+    let customerId = event.queryStringParameters.customerId;
+    if (!customerId) {
+        callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
+        return;
+    }
+
+    searchES(customerId, event.body, (err, respBody) => {
         let output = [],
             meta = {};
         if (respBody) {
@@ -141,28 +160,19 @@ module.exports.search = (event, context, callback) => {
 };
 
 module.exports.post = (event, context, callback) => {
-    const item = JSON.parse(event.body);//.replace(/""/g, 'null'));                      
-    postToES([item], function(err, respBody) {
+    const item = JSON.parse(event.body);//.replace(/""/g, 'null'));
+    const customerId = event.queryStringParameters.customerId;
+    postToES(customerId, [item], function(err, respBody) {
         callback(null, util.getCallbackBody(true, 200, 'Post completed: '+JSON.stringify(respBody)));
-    });
-};
-
-module.exports.init = (event, context, callback) => {
-    initES(function(err, respBody) {
-        if (err) {
-            console.log(err);
-            callback(null, util.getCallbackBody(true, 400, 'Init failed: '+err));
-        }
-        else {
-            callback(null, util.getCallbackBody(true, 200, 'Init completed: '+JSON.stringify(respBody)));
-            
-        }
     });
 };
 
 module.exports.updateMapping = (event, context, callback) => {
     elasticClient.indices.putMapping({
-        index: constants.esDomain.index,
+        index: constants.esDomain.index+'*',
+        allowNoIndices: true,
+        expandWildcards: 'all',
+        updateAllTypes: true,
         type: constants.esDomain.doctype,
         body: constants.CALL_LOG_MAPPINGS.call_log
     }, function(err, respBody) {
@@ -172,22 +182,35 @@ module.exports.updateMapping = (event, context, callback) => {
         }
         else {
             callback(null, util.getCallbackBody(true, 200, 'updateMapping completed: '+JSON.stringify(respBody)));
-        }            
-        
+        }                    
     });
-
 };
 
-
 module.exports.drop = (event, context, callback) => {
-    dropES(function(err, respBody) {
+    let customerId = event.queryStringParameters.customerId;
+    if (!customerId) {
+        callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
+        return;
+    }
+    dropES(customerId, function(err, respBody) {
         if (err) {
             console.log(err);
             callback(null, util.getCallbackBody(true, 400, 'Drop failed: '+err));
         }
         else {
             callback(null, util.getCallbackBody(true, 200, 'Drop completed: '+JSON.stringify(respBody)));
-            
+        }
+    });
+};
+
+module.exports.dropAll = (event, context, callback) => {
+    dropES(null, function(err, respBody) {
+        if (err) {
+            console.log(err);
+            callback(null, util.getCallbackBody(true, 400, 'Drop failed: '+err));
+        }
+        else {
+            callback(null, util.getCallbackBody(true, 200, 'Drop completed: '+JSON.stringify(respBody)));
         }
     });
 };
@@ -210,7 +233,7 @@ function importCustomerCallLogs(customer, fromDate, toDate) {
             header = 'Bearer '+phoneApiToken,
             url = 'https://api.phone.com/v4/accounts/'+phoneAccountId+'/call-logs?filters[start_time]=between:'+fromDate.unix()+','+toDate.unix()+'&limit='+PAGE_SIZE;
         // begin async API query for call logs
-        fetchCallLogs(url, header, 0, customer.timeZoneOffset);
+        fetchCallLogs(customer.id, url, header, 0, customer.timeZoneOffset);
         // end loop through days
         return util.getCallbackBody(true, 200, 'Imported call logs for account '+phoneAccountId + ' from '+fromDate.toString() + ' to '+toDate.toString());					
     }    

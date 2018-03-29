@@ -138,15 +138,6 @@ functions:
           path: callLogPost
           method: get
           cors: true
-  callLogInit:
-    handler: /handlers/calllog.init
-    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-init
-    timeout: 29
-    events:
-      - http:
-          path: callLogInit
-          method: get
-          cors: true
   callLogUpdateMapping:
     handler: /handlers/calllog.updateMapping
     name: ${self:service}-${opt:stage, self:provider.stage}-call-log-mapping
@@ -156,6 +147,15 @@ functions:
           path: callLogMapping
           method: get
           cors: true
+  callLogUpdateInit:
+    handler: /handlers/calllog.init
+    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-init
+    timeout: 29
+    events:
+      - http:
+          path: callLogInit
+          method: get
+          cors: true
   callLogDrop:
     handler: /handlers/calllog.drop
     name: ${self:service}-${opt:stage, self:provider.stage}-call-log-drop
@@ -163,6 +163,15 @@ functions:
     events:
       - http:
           path: callLogDrop
+          method: get
+          cors: true
+  callLogDropAll:
+    handler: /handlers/calllog.dropAll
+    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-drop-all
+    timeout: 29
+    events:
+      - http:
+          path: callLogDropAll
           method: get
           cors: true
   callLogImport:
