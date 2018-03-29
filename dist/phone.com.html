@@ -54,6 +54,10 @@ table.table-fixed thead tr th {
 .export-link, #export-voice-mail {
 	cursor: pointer;
 }
+.nodata {
+	font-size:smaller;
+	padding:20px;
+}
 		</style>
 	</head>
 	<body style="padding-top:105px">
@@ -470,6 +474,12 @@ table.table-fixed thead tr th {
 				}
 				fetchFxn(0);
             }
+			const materialOptions = {
+				series: { 0: {axis: 'Count'}, 1: {axis: 'Duration'} },
+				axes: {
+					y: { Count: {label: 'Count'}, Duration: {label: 'Duration'}}
+				}
+			};
 
 			function loadMetrics() {
 				let extId = $('#extensions-select').val();
@@ -494,34 +504,28 @@ table.table-fixed thead tr th {
                     chart.draw(google.visualization.arrayToDataTable(data.data.day_count));
 					chart = new google.visualization.PieChart(document.getElementById('direction-pie'));
                     chart.draw(google.visualization.arrayToDataTable(data.data.direction_count));
-					var materialOptions = {
-						series: {
-							0: {axis: 'Count'},
-							1: {axis: 'Duration'}
-						},
-						axes: {
-							y: {
-								Count: {label: 'Count'},
-								Duration: {label: 'Duration'}
-							}
-						}
-					};
-					let dataTable = new google.visualization.DataTable();
-					dataTable.addColumn('string', 'Day');
-					dataTable.addColumn('number', "Count");
-					dataTable.addColumn('number', "Duration");
 					data.data.calls_over_time.shift();
-					if (data.data.calls_over_time.length)
+					$('#calls-line').empty();					
+					if (data.data.calls_over_time.length) {
+						let dataTable = new google.visualization.DataTable();
+						dataTable.addColumn('string', 'Day');
+						dataTable.addColumn('number', "Count");
+						dataTable.addColumn('number', "Duration");
 						dataTable.addRows(data.data.calls_over_time);
-					chart = new google.charts.Line(document.getElementById('calls-line'));
-					chart.draw(dataTable, materialOptions);
+						chart = new google.charts.Line(document.getElementById('calls-line'));
+						chart.draw(dataTable, materialOptions);
+					}
+					else {
+						$('#calls-line').html('<div class="nodata">No data</div>');
+					}
 					$('.export-btn').removeAttr('disabled');
-				});
-		
+				});		
 			}
 
 			function loadData() {
 				customerId = parseInt($('#customer-select').val());
+				$('#extensions-select').empty();
+				$('#extensions-select').append('<option value="-1">All Extensions</option>');
 				$.ajax(customerURL+'/'+customerId)
 				.done(function(respObj) {
 					if (respObj && respObj.success) {
@@ -532,8 +536,6 @@ table.table-fixed thead tr th {
 							headers: headers
 						})
 						.done(function(data) {
-							$('#extensions-select').empty();
-							$('#extensions-select').append('<option value="-1">All Extensions</option>');
 							$.each(data.items, function(idx, itm) {
 								$('#extensions-select').append('<option value="'+itm.id+'">'+itm.extension+' - '+itm.name+'</option>');
 							});
