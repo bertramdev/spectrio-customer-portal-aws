@@ -35,8 +35,16 @@ function postToES(customerId, docs, tzOffset, callback) {
         item.start_hour = m.hour();
         item.start_day = m.day();
         if (item.details) {
-            item.details.forEach(function(detail){
-                if (detail.start_time) detail.start_time_ms = detail.start_time * 1000;
+            item.details.forEach(function(detail, idx){
+                if (detail.start_time) {
+                    detail.start_time_ms = detail.start_time * 1000;
+                    if (item.details.length > (idx+1) && item.details[idx+1].start_time) {
+                        detail.duration = item.details[idx+1].start_time - detail.start_time;
+                    }
+                }
+                if (detail.type && detail.called_number) {
+                    detail.type_called_number = detail.type +' '+ detail.called_number;
+                }
             });
         }
         let indexName = constants.esDomain.index+'_'+customerId+'_'+m.format('YYYYMM');
@@ -300,6 +308,23 @@ module.exports.aggregate = (event, context, callback) => {
                         "terms" : {
                             "field" : "direction"
                         }
+                    },
+                    "final_action_count" : {
+                        "terms" : {
+                            "field" : "final_action"
+                        }
+                    },
+                    "details_called_number_count" : {
+                        "nested" : {
+                            "path" : "details"
+                        },
+                        "aggs" : {
+                            "called_number_count" : {
+                                "terms" : {
+                                    "field" : "details.type_called_number"
+                                }
+                            }
+                        }
                     }
                 }
             };
@@ -314,6 +339,8 @@ module.exports.aggregate = (event, context, callback) => {
                         direction_count:[['Direction', 'Count']],
                         call_duration_ranges:[['Range', 'Count']],
                         day_count:[['Day','Count']],
+                        final_action_count:[['Action','Count']],
+                        action_count:[['Action','Count']]
                     },
                     meta = {total:0, from:fromPrm, to:toPrm};
                 if (respBody) {
@@ -321,7 +348,7 @@ module.exports.aggregate = (event, context, callback) => {
                     if (body.hits) {
                         meta.total = body.hits.total;
                         output.avg_call_duration = body.aggregations.avg_call_duration.value;
-                        ['direction_count','hour_count','day_count'].forEach(function(fld){
+                        ['direction_count','hour_count','day_count','final_action_count'].forEach(function(fld){
                             body.aggregations[fld].buckets.forEach(function(itm){
                                 let key = itm.key;
                                 if (fld == 'day_count') key = getDayName(itm.key);
@@ -338,6 +365,9 @@ module.exports.aggregate = (event, context, callback) => {
                         body.aggregations.call_duration_ranges.buckets.forEach(function(itm){
                             let key = formatMinuteRange(itm.from, itm.to);
                             output.call_duration_ranges.push([key, itm.doc_count]);
+                        });
+                        body.aggregations.details_called_number_count.called_number_count.buckets.forEach(function(itm){
+                            output.action_count.push([itm.key, itm.doc_count]);
                         });
                     }
                     else {

@@ -92,7 +92,7 @@ module.exports.CALL_LOG_MAPPINGS = {
 				"index": true
 			},
 			"final_action" : {
-				"type": "text",
+				"type": "keyword",
 				"index": true
 			},
 			"voicemail_url" : {
@@ -144,15 +144,12 @@ module.exports.CALL_LOG_MAPPINGS = {
             "details" : {
                 "type": "nested",
                 "properties" : {
-                    "id" : {
-                        "type" : "long"
-                    },
-                    "name" : {
-						"type": "text",
+                    "called_number" : {
+						"type": "keyword",
 						"index": true
 					},
-                    "called_number" : {
-						"type": "text",
+                    "type_called_number" : {
+						"type": "keyword",
 						"index": true
 					},
                     "caller_id" : {
@@ -169,7 +166,10 @@ module.exports.CALL_LOG_MAPPINGS = {
 						"type": "keyword",
 						"index": true
 					},
-                    "voip_id" : {
+					"duration" : {
+						"type" : "short"
+					},		
+					"voip_id" : {
                         "type" : "integer"
                     }
                 }
