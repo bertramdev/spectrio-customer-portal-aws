@@ -141,7 +141,7 @@ table.table-fixed thead tr th {
 									Calls over time
 								</div>
 								<div class="card-body">
-									<div id="calls-line" style="width: 100%; height: 300px;"></div>
+									<div id="calls-line" style="width: 100%; height: 320px;"></div>
 								</div>
 							</div>
 						</div>
@@ -167,7 +167,7 @@ table.table-fixed thead tr th {
                                 Incoming/Outgoing
                             </div>
                             <div class="card-body">
-                                <div id="direction-pie" style="width: 100%; height: 300px;"></div>
+                                <div id="direction-pie" style="width: 100%; height: 320px;"></div>
                             </div>
                         </div>
                     </div>
@@ -181,7 +181,7 @@ table.table-fixed thead tr th {
                                 Time of Day
                             </div>
                             <div class="card-body">
-                                <div id="hour-pie" style="width: 100%; height: 300px;"></div>
+                                <div id="hour_count-chart" style="width: 100%; height: 320px;"></div>
                             </div>
                         </div>
                         <div class="card call-log-card">
@@ -189,7 +189,7 @@ table.table-fixed thead tr th {
                                 Day of Week
                             </div>
                             <div class="card-body">
-                                <div id="day-pie" style="width: 100%; height: 300px;"></div>
+                                <div id="day_count-chart" style="width: 100%; height: 320px;"></div>
                             </div>
                         </div>
                     </div>
@@ -203,7 +203,7 @@ table.table-fixed thead tr th {
                                 Top Actions
                             </div>
                             <div class="card-body">
-                                <div id="action-chart" style="width: 100%; height: 300px;"></div>
+                                <div id="action_count-chart" style="width: 100%; height: 320px;"></div>
                             </div>
                         </div>
                         <div class="card call-log-card">
@@ -211,13 +211,36 @@ table.table-fixed thead tr th {
                                 Top Final Actions
                             </div>
                             <div class="card-body">
-                                <div id="final-action-chart" style="width: 100%; height: 300px;"></div>
+                                <div id="final_action_count-chart" style="width: 100%; height: 320px;"></div>
                             </div>
                         </div>
                     </div>
                 </div>		
             </div>
 
+            <div class="row pb-2" id="agg-section4">
+                <div class="col-sm-10 offset-sm-2">
+                    <div class="card-deck">
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                Area Codes
+                            </div>
+                            <div class="card-body">
+                                <div id="area_codes_count-chart" style="width: 100%; height: 320px;"></div>
+                            </div>
+                        </div>
+                        <div class="card call-log-card">
+                            <div class="card-header bg-light">
+                                States
+                            </div>
+                            <div class="card-body">
+                                <div id="states_count-chart" style="width: 100%; height: 320px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>		
+            </div>
+			
 		<form>
 			<!--div class="form-group row">
 				<label for="name" class="col-sm-2">Billing Contact</label>
@@ -503,6 +526,55 @@ table.table-fixed thead tr th {
 				}
 			};
 
+			function updateBarChart(nm, data) {
+				$('#'+nm+'-chart').empty();
+				if (data[nm].length > 1) {
+					chart = new google.visualization.BarChart(document.getElementById(nm+'-chart'));
+					let cfg = {
+						chartArea:{width:(nm=='states_count'?'80%':'65%'),right:5,height:'100%'},
+						legend: { position:'none'},
+						vAxis: {textStyle:{fontSize:(nm == 'hour_count'?7.5:null)}}
+					};
+					console.log(cfg);
+					chart.draw(google.visualization.arrayToDataTable(data[nm]), cfg);
+				}
+				else {
+					$('#'+nm+'-chart').html('<div class="nodata">No data</div>');
+				}
+			}
+			function updateColumnChart(nm, data) {
+				$('#'+nm+'-chart').empty();
+				if (data[nm].length > 1) {
+					chart = new google.visualization.ColumnChart(document.getElementById(nm+'-chart'));
+					let cfg = {
+						chartArea:{width:'90%',right:5,height:'80%',top:5},
+						legend: { position:'none'},
+						hAxis: {slantedText:true,slantedTextAngle:60,textStyle:{fontSize:(nm == 'hour_count'?8:null)}}
+					};
+					console.log(cfg);
+					chart.draw(google.visualization.arrayToDataTable(data[nm]), cfg);
+				}
+				else {
+					$('#'+nm+'-chart').html('<div class="nodata">No data</div>');
+				}
+			}
+
+			function updateMapChart(nm, data, reg, mode, res) {
+				var data = google.visualization.arrayToDataTable(data[nm]);
+				var options = {
+					displayMode: 'regions',
+					region: 'US'
+				};
+				if (reg) options.region = reg;
+				if (mode) options.displayMode = mode;
+				if (res) options.resolution = res;
+				if (mode == 'markers') {
+					options.colorAxis= {colors: ['#4374e0', '#e7711c']};
+				}
+				var chart = new google.visualization.GeoChart(document.getElementById(nm+'-chart'));
+				chart.draw(data, options);
+			}			
+
 			function loadMetrics() {
 				let extId = $('#extensions-select').val();
 				
@@ -520,38 +592,29 @@ table.table-fixed thead tr th {
 				.done(function(data) {
 					$('#call-total').text(data.meta.total);
 					$('#call-avg-duration').text(Math.round(data.data.avg_call_duration));
-					let chart = new google.visualization.PieChart(document.getElementById('hour-pie'));
-                    chart.draw(google.visualization.arrayToDataTable(data.data.hour_count));
-					chart = new google.visualization.PieChart(document.getElementById('day-pie'));
+					let chart = new google.visualization.PieChart(document.getElementById('hour_count-chart'));
+					chart = new google.visualization.PieChart(document.getElementById('day_count-chart'));
                     chart.draw(google.visualization.arrayToDataTable(data.data.day_count));
 					chart = new google.visualization.PieChart(document.getElementById('direction-pie'));
-                    chart.draw(google.visualization.arrayToDataTable(data.data.direction_count));
-					$('#final-action-chart').empty();					
-					if (data.data.final_action_count.length > 1) {
-						chart = new google.visualization.BarChart(document.getElementById("final-action-chart"));
-	      				chart.draw(google.visualization.arrayToDataTable(data.data.final_action_count), {
-							chartArea:{width:'65%',right:5},
-							legend: {
-								position:'none'
-							}
-						});
-					}
-					else {
-						$('#cfinal-action-chart').html('<div class="nodata">No data</div>');
-					}
-					$('#action-chart').empty();					
-					if (data.data.action_count.length > 1) {
-						chart = new google.visualization.BarChart(document.getElementById("action-chart"));
-						chart.draw(google.visualization.arrayToDataTable(data.data.action_count), {
-							chartArea:{width:'65%',right:5},
-							legend: {
-								position:'none'
-							}
-						});
-					}
-					else {
-						$('#action-chart').html('<div class="nodata">No data</div>');
-					}
+					chart.draw(google.visualization.arrayToDataTable(data.data.direction_count));
+					data.data.area_codes_count_orig = data.data.area_codes_count;
+					//data.data.area_codes_count = [['Area Code','Count']];
+					data.data.area_codes_count = [['Latitude','Longitude','Label','Count']];
+					data.data.area_codes_count_orig.forEach(function(mbr){
+						//data.data.area_codes_count.push(['('+mbr.areaCode+') '+mbr.localities+ ' '+mbr.state, mbr.count]);
+						let latLon = mbr.geoPoint.split(',');
+						data.data.area_codes_count.push([parseFloat(latLon[0]), parseFloat(latLon[1]), '('+mbr.areaCode+') '+mbr.localities+ ' '+mbr.state,mbr.count]);
+					});
+					//'states_count',
+					updateMapChart('states_count', data.data, 'US', 'regions','provinces');
+					//,'area_codes_count'
+					updateMapChart('area_codes_count', data.data, 'US', 'markers');
+					['final_action_count','action_count'].forEach(function(nm) {
+							updateBarChart(nm, data.data);
+					});
+					['hour_count'].forEach(function(nm) {
+							updateColumnChart(nm, data.data);
+					});
 					data.data.calls_over_time.shift();
 					$('#calls-line').empty();					
 					if (data.data.calls_over_time.length) {
@@ -656,7 +719,7 @@ table.table-fixed thead tr th {
 			});
 		</script>
         <script type="text/javascript">
-			google.charts.load('current', {'packages':['line', 'corechart']});
+			google.charts.load('current', {'packages':['line', 'corechart','geochart'], 'mapsApiKey':'AIzaSyDs1ehZE1qyN6A-PvP1RuLxoXuQ35b2goA'});
 		</script>
 	
 	</body>

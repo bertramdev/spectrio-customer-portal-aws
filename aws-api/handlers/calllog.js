@@ -24,16 +24,14 @@ const elasticClient = new elasticsearch.Client({
     amazonES: { credentials: new AWS.EnvironmentCredentials('AWS') }
 });
 
+var areaCodes;
+
 function postToES(customerId, docs, tzOffset, callback) {
     var body = [],
         indices = {};
     docs.forEach(function(item) {
         if (item['@controls']) delete item['@controls'];
         if (item.extension && item.extension['@controls']) delete item.extension['@controls'];
-        let m = moment(1000*item.start_time_epoch);
-        if (tzOffset) m.utcOffset(tzOffset);
-        item.start_hour = m.hour();
-        item.start_day = m.day();
         if (item.details) {
             item.details.forEach(function(detail, idx){
                 if (detail.start_time) {
@@ -47,6 +45,34 @@ function postToES(customerId, docs, tzOffset, callback) {
                 }
             });
         }
+        //console.log(item.caller_id);
+        if (item.caller_id && item.caller_id.length > 4) {
+            let area_code = item.caller_id.substr(0,5);
+            if (area_code.substring(0,1) == '+') area_code = area_code.substr(1,4);
+            if (area_code.substring(0,1) == '1') area_code = area_code.substr(1,3);
+            area_code = area_code.substring(0,3);
+            //console.log('-> "'+area_code+'"');
+            let areaCodeData = areaCodes.AREA_CODES_LOCATION[area_code];
+            if (areaCodeData) {
+                item.area_code = area_code;
+                item.localities = areaCodeData.localities;
+                item.state = areaCodeData.state;
+                item.country_code = areaCodeData.country;
+                item.tz_offset = areaCodeData.tzOffset;
+                item.location = areaCodeData.geo_point;
+                item.area_code_display = '('+ area_code+') '+item.localities+' '+item.state;
+            }
+            //else {
+            //    console.log('no area code data found');
+            //}
+        }
+        let m = moment(1000*item.start_time_epoch);
+        // try to use offset of area code
+        if (item.tz_offset != undefined && item.tz_offset != null) m.utcOffset(item.tz_offset);
+        else if (tzOffset) m.utcOffset(tzOffset); // else use offset of account
+        item.start_hour = m.hour();
+        item.start_day = m.day();
+        
         let indexName = constants.esDomain.index+'_'+customerId+'_'+m.format('YYYYMM');
         body.push({"index":{"_id":item.id, "_index": indexName}});
         body.push(item);
@@ -261,9 +287,7 @@ module.exports.aggregate = (event, context, callback) => {
                 "size":0, 
                 "aggs" : {
                     "avg_call_duration" : { 
-                        "avg" : { 
-                            "field" : "call_duration"
-                        } 
+                        "avg" : { "field" : "call_duration" } 
                     },
                     "call_duration_ranges" : {
                         "range" : {
@@ -284,13 +308,7 @@ module.exports.aggregate = (event, context, callback) => {
                             "interval" : "day",
                             "time_zone": tzOffsetString
                         },
-                        "aggs": {
-                            "date_avg_call_duration" : { 
-                                "avg" : { 
-                                    "field" : "call_duration"
-                                }
-                            }
-                        }
+                        "aggs": { "date_avg_call_duration" : { "avg" : { "field" : "call_duration" } } }
                     },
                     "hour_count" : {
                         "histogram" : {
@@ -304,27 +322,13 @@ module.exports.aggregate = (event, context, callback) => {
                             "interval": 1
                         }
                     },
-                    "direction_count" : {
-                        "terms" : {
-                            "field" : "direction"
-                        }
-                    },
-                    "final_action_count" : {
-                        "terms" : {
-                            "field" : "final_action"
-                        }
-                    },
+                    "direction_count" : { "terms" : { "field" : "direction" } },
+                    "final_action_count" : { "terms" : { "field" : "final_action" } },
+                    "area_codes_count" : { "terms" : { "field" : "area_code", "size":401 } },
+                    "states_count" : { "terms" : { "field" : "state", "size":50 } },                    
                     "details_called_number_count" : {
-                        "nested" : {
-                            "path" : "details"
-                        },
-                        "aggs" : {
-                            "called_number_count" : {
-                                "terms" : {
-                                    "field" : "details.type_called_number"
-                                }
-                            }
-                        }
+                        "nested" : { "path" : "details" },
+                        "aggs" : { "called_number_count" : { "terms" : { "field" : "details.type_called_number" } } }
                     }
                 }
             };
@@ -340,20 +344,33 @@ module.exports.aggregate = (event, context, callback) => {
                         call_duration_ranges:[['Range', 'Count']],
                         day_count:[['Day','Count']],
                         final_action_count:[['Action','Count']],
-                        action_count:[['Action','Count']]
+                        action_count:[['Action','Count']],
+                        states_count:[['State','Count']],
+                        area_codes_count:[]
                     },
                     meta = {total:0, from:fromPrm, to:toPrm};
                 if (respBody) {
                     let body = respBody instanceof String ? JSON.parse(respBody) : respBody;
+                    areaCodes = areaCodes || require('../utils/areaCodes');                    
                     if (body.hits) {
                         meta.total = body.hits.total;
                         output.avg_call_duration = body.aggregations.avg_call_duration.value;
-                        ['direction_count','hour_count','day_count','final_action_count'].forEach(function(fld){
+                        ['direction_count','hour_count','day_count','final_action_count','states_count','area_codes_count'].forEach(function(fld){
                             body.aggregations[fld].buckets.forEach(function(itm){
                                 let key = itm.key;
                                 if (fld == 'day_count') key = getDayName(itm.key);
                                 else if (fld == 'hour_count') key = getHourName(itm.key);
-                                output[fld].push([key,itm.doc_count]);
+                                else if (fld == 'states_count') key = constants.STATES[itm.key] || itm.key || 'N/A';
+                                if (fld == 'area_codes_count') {
+                                    let areaCodeData = areaCodes.AREA_CODES_LOCATION[key] || {};
+                                    let mbr = {areaCode:key,count:itm.doc_count,geoPoint:areaCodeData.geo_point,
+                                        localities:areaCodeData.localities, stateAbbreviation: areaCodeData.state,
+                                        country:areaCodeData.country, tzOffset:areaCodeData.tzOffset, state: constants.STATES[areaCodeData.state]};
+                                    output[fld].push(mbr);
+                                }
+                                else {
+                                    output[fld].push([key,itm.doc_count]);
+                                }
                             });
                         });
                         body.aggregations.calls_over_time.buckets.forEach(function(itm){
@@ -473,6 +490,7 @@ module.exports.import = (event, context, callback) => {
     else{
         prmSet.push(event.queryStringParameters);
     }
+    areaCodes = require('../utils/areaCodes');
     prmSet.forEach(function(prms){
         var customerId = (prms ? prms.customerId : null);
         
