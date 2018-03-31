@@ -27,6 +27,7 @@ module.exports.default = (event, context, callback) => {
         
 	dynamoDb.get(params, (error, data) => {
 		if (error) {
+			console.log('customer fetch failed');
 			console.error(error);
 			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));			
 			return;
@@ -41,15 +42,22 @@ module.exports.default = (event, context, callback) => {
 			return;
 		}
 		else {
+			console.log('customer fetch succeeded');
+			console.log(data.Item);
 			var publicKey = data.Item.purplePublicKey, //'ca722481fcff8361d4fe2ac3a476aba4'
 				privateKey = data.Item.purplePrivateKey, //'fcc4780fc12bdf89e0bc81371e45d9b3',
 				path = (event.queryStringParameters ? event.queryStringParameters.path : null) || '/api/company/v1/venues',
 				now = new Date(),
 				authInfo = auth.getAuthInfo(publicKey, privateKey, path, now), 
 				url = 'https://'+authInfo.portalDomain+path;				
-
+			console.log(authInfo);
+			console.log(url);
 			request
 				.get(url)
+				.timeout({
+					response: 25000,
+					deadline: 29000
+				})
 				.accept('application/json')
 				.set('Host', authInfo.portalDomain)
 				.set('Content-Type', 'application/json')
@@ -71,7 +79,7 @@ module.exports.default = (event, context, callback) => {
 				.catch((error) => {
 					console.log(error);
 					var info = {};
-					if (error.response.text) {
+					if (error.response && error.response.text) {
 						info = JSON.parse(error.response.text);
 					}
 					else {

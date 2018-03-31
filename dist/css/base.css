@@ -1,0 +1,46 @@
+.table-fixed {
+	width: 100%;
+	border: 1px silver solid;
+}
+table.table-fixed tbody {
+	height:240px;
+	overflow-y:auto;
+	width: 100%;
+}
+table.table-fixed thead,tbody,tr,td,th{
+    display:block;
+}
+table.table-fixed tbody td {
+    float:left;
+}
+table.table-fixed thead tr th {
+	float:left;
+}
+.call-log-card {
+	text-align: center;
+}
+.call-log-row {
+	padding-bottom:15px;
+}
+.voicemail-button {
+	width:23px;
+	padding:1px;
+	margin-right:2px;
+	margin-bottom:2px;
+}
+.hilight>td {
+	font-weight:800 !important;
+}
+.card-title>h2 {
+	margin:0;
+}
+.card-body {
+	padding:10px;
+}
+.export-link, #export-voice-mail {
+	cursor: pointer;
+}
+.nodata {
+	font-size:smaller;
+	padding:20px;
+}

@@ -54,6 +54,7 @@ functions:
   purpleProxy:
     handler: /handlers/proxy.default
     name: ${self:service}-${opt:stage, self:provider.stage}-purpleProxy
+    timeout: 29
     events:
       - http:
           path: purpleProxy

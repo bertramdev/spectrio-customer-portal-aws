@@ -228,7 +228,7 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 												}
 												// store daily totales
 												let params = {
-													TableName: dynamoDbTable,
+													TableName: constants.DYNAMODB_TABLES.venueDailyTotals,
 													Key: { id: dailyTotals.id },
 													Item: dailyTotals
 												};
@@ -254,7 +254,7 @@ module.exports.calculateVenuesDailyTotals = (event, context, callback) => {
 										const dailyTotals = getDailyInfo(customerId, externalId, fromString2, name);
 										// store daily totales
 										let params = {
-											TableName: dynamoDbTable,
+											TableName: constants.DYNAMODB_TABLES.venueDailyTotals,
 											Key: { id: dailyTotals.id.toString() },
 											Item: dailyTotals
 										};
