@@ -1,6 +1,8 @@
 const sha256 = require('js-sha256');
 
+//
 const portalDomain = 'region1.purpleportal.net';
+//const portalDomain = 'purpleportal.net';
 
 //'X-API-Authorization'
 module.exports.getAuthInfo = (publicKey, privateKey, path, now, postString) => {

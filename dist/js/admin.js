@@ -14,6 +14,21 @@ function storeCustomers() {
             phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'
         },
         {
+            id: 113703,
+            customerName: 'Bill Richie',
+            timeZoneOffset: -7,
+            phoneAccountId: 113703,
+            phoneApiToken: 'EMK6okqquTbJBunbYBeMYKvXOX'
+        },
+        {
+            id: 108193,
+            customerName: 'Tastea Costa Mesa',
+            timeZoneOffset: -7,
+            phoneAccountId: 108193,
+            phoneApiToken: 'uPFEtIDbnmCCvr9dAZXHTPtEaF'
+        },
+        
+        {
             id: 4286,
             customerName: 'Spectrio',
             purpleAccountId: 4286,
