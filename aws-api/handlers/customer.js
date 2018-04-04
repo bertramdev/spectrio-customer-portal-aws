@@ -6,7 +6,7 @@ const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-depe
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 AWS.config.region = process.env.REGION;
 
-module.exports.fetch = (customerId, callback) => {
+module.exports.fetch = (customerId, callback, startKey, pageSize) => {
     const dynamoDbTable = constants.DYNAMODB_TABLES.customers;
     const params = {
         TableName: dynamoDbTable
@@ -15,6 +15,10 @@ module.exports.fetch = (customerId, callback) => {
 		params.FilterExpression = "id = :id"
         params.ExpressionAttributeValues = { ":id":customerId};
     }
+    else if (startKey) {
+        params.ExclusiveStartKey = startKey;
+    }
+    params.PageSize = pageSize || 20;
     console.log(customerId);
     // delete the todo from the database
     dynamoDb.scan(params, (error, data) => {
@@ -23,18 +27,18 @@ module.exports.fetch = (customerId, callback) => {
         console.log(data);
         if (error) {
             console.log(error);
-            callback(error, null);
+            callback(error, null, null);
         }
         else {
             console.log(data);
-            callback(null, data.Items);
+            callback(null, data.Items, data.LastEvaluatedKey);
         }
       });
 }
 
 module.exports.default = (event, context, callback) => {
 	console.log(event);
-	var customerId = event.pathParameters.id,
+	var customerId = event.pathParameters ? event.pathParameters.id : null,
         httpMethod = event.httpMethod,
 		dynamoDbTable = constants.DYNAMODB_TABLES.customers,
         now = new Date();
@@ -155,17 +159,23 @@ module.exports.default = (event, context, callback) => {
     
     }
     else if (httpMethod == 'GET') {
-        module.exports.fetch(customerId, function(err, data) {
-            console.log(err);
-            console.log(data);
+        var lastKey = event.queryStringParameters ? event.queryStringParameters.lastKey : null,
+            pageSize = event.queryStringParameters ? event.queryStringParameters.pageSize : null;
+        
+        module.exports.fetch(customerId, function(err, data, lastKey) {
+//            console.log(data);
             if (err) {
+                console.log(err);
                 callback(null, util.getCallbackBody(false, 200, error.toString()));
             }
-            else {
+            else if (customerId) {
                 let item = data.length > 0 ? data[0] : null;
                 callback(null, util.getCallbackBody(true, 200, 'Customer retrieved', item));
             }
-        });
+            else {
+                callback(null, util.getCallbackBody(true, 200, 'Customers retrieved', data, {lastKey: lastKey}));
+            }
+        }, lastKey, pageSize);
     }
     else {
         callback(null, util.getCallbackBody(false, 400, 'HTTP method not supprted: '+httpMethod));        

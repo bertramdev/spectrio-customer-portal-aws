@@ -117,6 +117,14 @@ functions:
           path: customer/{id}
           method: delete
           cors: true
+  customers:
+    handler: /handlers/customer.default
+    name: ${self:service}-${opt:stage, self:provider.stage}-customers
+    events:
+      - http:
+          path: customers
+          method: get
+          cors: true
   callLog:
     handler: /handlers/calllog.search
     name: ${self:service}-${opt:stage, self:provider.stage}-call-log

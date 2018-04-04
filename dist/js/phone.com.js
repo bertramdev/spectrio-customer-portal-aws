@@ -1,5 +1,6 @@
 var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
 var customerURL = 'https:/'+proxyHost+'/dev/customer';
+var customersURL = 'https:/'+proxyHost+'/dev/customers';
 var aggregateURL = 'https:/'+proxyHost+'/dev/callLogAggregate';
 var customerId;
 var accountId;
@@ -338,12 +339,30 @@ function loadData() {
         }
     });
 }
+function init() {
+    $.ajax(customersURL)
+    .done(function(data) {
+        if (data.success) {
+            let html = '';
+            data.data.sort(function(a,b) {return (a.customerName.toLowerCase() > b.customerName.toLowerCase()) ? 1 : ((b.customerName.toLowerCase() > a.customerName.toLowerCase()) ? -1 : 0);} );             
+            data.data.forEach(function(itm){
+                html += '<option value="'+itm.id+'">'+itm.customerName+'</option>';
+            });
+            $('#customer-select').append(html);
+            $('#customer-select').val('4286');
+            loadData();
+        }
+        else {
+            alert(data.message);
+        }
+    });
+}
 $(document).ready(function() {
     if (Cookies.get('loggedInX')!='true') {
         $('#loginModal').modal('show');
     }
     else {
-        loadData();
+        init();
     }
     $('[name="agg-days"]').on('change', loadMetrics);
     $('#customer-select').on('change', loadData);
