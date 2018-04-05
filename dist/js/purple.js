@@ -91,12 +91,14 @@ function loadAnalytics(matchId) {
     let days = parseInt($('[name="agg-days"]:checked').val()),
         to  = moment(),
         from = moment().add(-1*days, 'days');
+    console.log('loading analytics for '+matchId +' for '+days+' days');
+        
     let fromP = from.format('YYYYMMDD'),
         toP = to.format('YYYYMMDD');
     let aggUrl = purpleFetchAggs + '?customerId='+customerId+'&venueId='+matchId+'&from='+fromP+'&to='+toP;
     $.ajax(aggUrl)
     .done(function(responseObj) {
-        console.log(responseObj);
+        //console.log(responseObj);
         if (responseObj.success && responseObj.data) {
             $('#sources').text(responseObj.data.sourceCaptured);
             $('#age').text(responseObj.data.ageCaptured);
@@ -108,7 +110,7 @@ function loadAnalytics(matchId) {
             for (let k in responseObj.data.gender) {
                 data.push([k.substr(0,1).toUpperCase()+k.substr(1), responseObj.data.gender[k]]);
             }
-            console.log(data);
+            //console.log(data);
             let chart = new google.visualization.PieChart(document.getElementById('gender-pie'));
             chart.draw(google.visualization.arrayToDataTable(data));
 
@@ -116,7 +118,7 @@ function loadAnalytics(matchId) {
             for (let k in responseObj.data.age) {
                 ageData.push([k.replace('age','').replace('to', ' to ').replace('Over', 'Over '), responseObj.data.age[k]]);
             }
-            console.log(ageData);
+            //console.log(ageData);
             let ageChart = new google.visualization.PieChart(document.getElementById('age-pie'));
             ageChart.draw(google.visualization.arrayToDataTable(ageData));
 
@@ -137,7 +139,7 @@ function loadAnalytics(matchId) {
 }
 
 function selectVenue(matchId) {
-    $('.export-btn').attr('disabled', 'true');       
+    $('.export-btn,.days-btn').attr('disabled', 'true');       
     let venue
     if (matchId != '-1' && matchId != 'all') {
         venue = $.grep(venues, function(itm, idx) {
@@ -193,6 +195,8 @@ function selectVenue(matchId) {
     }
     if (matchId != '-1') {
         loadAnalytics(matchId);
+        $('.days-btn').removeAttr('disabled');       
+        
     }
     $('[name="address"]').val(addressString);        
 }
