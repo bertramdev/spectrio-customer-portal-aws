@@ -83,12 +83,12 @@ module.exports.default = (event, context, callback) => {
 						info = JSON.parse(error.response.text);
 					}
 					else {
-						info.response_code = error.response.status;
+						info.response_code = error.response ? error.response.status : 500;
 						info.success = false;
 						info.message = error.message;
 						info.timestamp = now;
 					}
-					callback(null, util.getCallbackBody(false, 500, error.message, info));
+					callback(null, util.getCallbackBody(false, info.response_code || 500, error.message, info));
 				});
 		}
 	});

@@ -6,13 +6,12 @@ provider:
   stage: dev
   #timeout: 30 # optional, in seconds, default is 6
   environment:
-    DYNAMODB_CUSTOMERS_TABLE: purple-${opt:stage, self:provider.stage}-customers
-    DYNAMODB_VENUES_TABLE: purple-${opt:stage, self:provider.stage}-venues
-    DYNAMODB_VENUE_DAILY_TOTALS_TABLE: purple-${opt:stage, self:provider.stage}-venue-daily-totals
-    DYNAMODB_CUSTOMER_DAILY_TOTALS_TABLE: purple-${opt:stage, self:provider.stage}-customer-daily-totals
-    DYNAMODB_VISITS_TABLE: purple-${opt:stage, self:provider.stage}-visits
-    DYNAMODB_VISITORS_TABLE: purple-${opt:stage, self:provider.stage}-visitors
-    ELASTICSEARCH_CALL_LOG_INDEX: phone-${opt:stage, self:provider.stage}-calllogs
+    DYNAMODB_CUSTOMERS_TABLE: wifi-${opt:stage, self:provider.stage}-customers
+    DYNAMODB_VENUES_TABLE: wifi-${opt:stage, self:provider.stage}-venues
+    DYNAMODB_VENUE_DAILY_TOTALS_TABLE: wifi-${opt:stage, self:provider.stage}-venue-daily-totals
+    DYNAMODB_VISITS_TABLE: wifi-${opt:stage, self:provider.stage}-visits
+    DYNAMODB_VISITORS_TABLE: wifi-${opt:stage, self:provider.stage}-visitors
+    ELASTICSEARCH_CALL_LOG_INDEX: voip-${opt:stage, self:provider.stage}-calllogs
     REGION: us-east-1
     STAGE: dev
     ELASTIC_URL:
@@ -43,7 +42,7 @@ provider:
           - sns
           - Ref: AWS::Region
           - Ref: AWS::AccountId
-          - aggregateVisitors
+          - aggregateCustomerVenueVisitors
     AGGREGATE_VENUE_VISITORS_TOPIC:
       Fn::Join:
         - ":"
@@ -52,8 +51,7 @@ provider:
           - sns
           - Ref: AWS::Region
           - Ref: AWS::AccountId
-          - aggregateVenueVisitors
-      
+          - aggregateVenueVisitors      
   region: ${self:provider.environment.REGION}
   iamRoleStatements:
     - Effect: Allow
@@ -71,78 +69,70 @@ provider:
 functions:
   purpleProxy:
     handler: /handlers/proxy.default
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleProxy
+    name: ${self:service}-${opt:stage, self:provider.stage}-purple-wifi-proxy
     timeout: 29
     events:
       - http:
-          path: purpleProxy
+          path: purple-wifi-proxy
           method: get
           cors: true
-  purpleStore:
-    handler: /handlers/store.default
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleStore
-    events:
-      - http:
-          path: purpleStore
-          method: get
-          cors: true
-  purpleAggregateCustomerVisitors:
+  triggerWifiAggregateCustomerDailyTotals:
     handler: /handlers/aggregate.calculateVenuesDailyTotals
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateCustomerVisitors
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-trig-calc-venues-totals
     timeout: 300
     events:
       - http:
-          path: purpleAggregateVenueVisitors
+          path: wifi-trigger-calc-venues-totals
           method: get
           cors: true
-      - sns: aggregateVisitors
-  purpleAggregateVenueVisitors:
+      - sns: aggregateCustomerVenueVisitors
+  wifiAggregateVenueDailyTotals:
     handler: /handlers/aggregate.calculateVenueDailyTotals
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateVenueVisitors
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-calc-venue-totals
     timeout: 300
     events:
       - http:
-          path: purpleAggregateVenueVisitors
+          path: wifi-calc-venue-daily-totals
           method: get
           cors: true
       - sns: aggregateVenueVisitors
-  purpleAggregateAllCustomerVisitors:
+  wifiTriggerAggregateAllCustomerVenuesDailyTotals:
     handler: /handlers/aggregate.calculateAllVenuesDailyTotals
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateAllCustomerVisitors
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-trig-calc-cust-venues-totals
     timeout: 300
     events:
       - http:
-          path: purpleAggregateAllVenueVisitors
+          path: wifi-trigger-calc-cust-venues-totals
           method: get
           cors: true
       - schedule: cron(0 1 * * ? *)
-  purpleAggregateCustomerVisitorsForReal:
+  wifiAggregateCustomerDailyTotals:
     handler: /handlers/aggregate.calculateCustomerDailyTotals
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateCustomerVisitorsForReal
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-calc-cust-totals
     timeout: 300
     events:
       - http:
-          path: purpleAggregateCustomerVisitors
+          path: wifi-calculate-cust-totals
           method: get
           cors: true
       - sns: aggregateCustomerVisitors
-  purpleAggregateTotalCustomerVisitors:
+  wifiTriggerAggregateTotalCustomerDailyTotals:
     handler: /handlers/aggregate.calculateAllCustomerDailyTotals
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleAggregateCustomerDailyVisitors
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-trigger-calc-all-cust-totals
     timeout: 300
     events:
       - http:
-          path: purpleAggregateAllCustomerVisitors
+          path: wifi-trigger-aggregate-cust-totals
           method: get
           cors: true
       - schedule: cron(0 3 * * ? *)
-  purpleFetchVenueDailyTotals:
+  wifiFetchVenueDailyTotals:
     handler: /handlers/aggregate.fetchVenueDailyTotals
-    name: ${self:service}-${opt:stage, self:provider.stage}-purpleFetchVenueDailyTotals
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-fetch-venue-totals
     timeout: 300
     events:
       - http:
-          path: purpleFetchVenueDailyTotals
+          path: wifi-fetch-venue-totals
           method: get
           cors: true
   customer:
@@ -175,15 +165,15 @@ functions:
           cors: true
   callLog:
     handler: /handlers/calllog.search
-    name: ${self:service}-${opt:stage, self:provider.stage}-call-log
+    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-search
     timeout: 29
     events:
       - http:
-          path: callLogSearch
+          path: call-log-search
           method: get
           cors: true
       - http:
-          path: callLogSearch
+          path: call-log-search
           method: post
           cors: true
   callLogAggregate:
@@ -192,7 +182,7 @@ functions:
     timeout: 29
     events:
       - http:
-          path: callLogAggregate
+          path: call-log-aggregate
           method: get
           cors: true
   callLogPost:
@@ -201,7 +191,7 @@ functions:
     timeout: 29
     events:
       - http:
-          path: callLogPost
+          path: call-log-post
           method: get
           cors: true
   callLogUpdateMapping:
@@ -210,7 +200,7 @@ functions:
     timeout: 29
     events:
       - http:
-          path: callLogMapping
+          path: call-log-mapping
           method: get
           cors: true
   callLogUpdateInit:
@@ -219,7 +209,7 @@ functions:
     timeout: 29
     events:
       - http:
-          path: callLogInit
+          path: call-log-init
           method: get
           cors: true
   callLogDrop:
@@ -228,7 +218,7 @@ functions:
     timeout: 29
     events:
       - http:
-          path: callLogDrop
+          path: call-log-drop
           method: get
           cors: true
   callLogDropAll:
@@ -237,7 +227,7 @@ functions:
     timeout: 29
     events:
       - http:
-          path: callLogDropAll
+          path: call-log-drop-all
           method: get
           cors: true
   callLogImport:
@@ -246,7 +236,7 @@ functions:
     timeout: 300
     events:
       - http:
-          path: callLogImport
+          path: call-log-import
           method: get
           cors: true
       - sns: importCallLogs
@@ -256,7 +246,7 @@ functions:
     timeout: 300
     events:
       - http:
-          path: callLogImportAll
+          path: call-log-import-all
           method: get
           cors: true
       - schedule: cron(0 1 * * ? *)
@@ -361,22 +351,6 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.DYNAMODB_VENUE_DAILY_TOTALS_TABLE}
-    CustomerDailyTotalsDynamoDbTable:
-      Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
-      Properties:
-        AttributeDefinitions:
-          -
-            AttributeName: id
-            AttributeType: S
-        KeySchema:
-          -
-            AttributeName: id
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.DYNAMODB_CUSTOMER_DAILY_TOTALS_TABLE}
     VisitsDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain

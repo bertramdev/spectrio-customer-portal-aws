@@ -1,9 +1,6 @@
 // ADMIN
-// https://mnk2ecc85j.execute-api.us-east-1.amazonaws.com/dev/purpleProxy
-var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
-var purpleAggregate = 'https:/'+proxyHost+'/dev/purpleAggregateVenueVisitors';
-var purpleStore = 'https:/'+proxyHost+'/dev/purpleStore';
-var customerURL = 'https:/'+proxyHost+'/dev/customer';
+var purpleAggregate = 'https://'+proxyHost+'/dev/wifi-trigger-calc-cust-venues-totals';
+var customerURL = 'https://'+proxyHost+'/dev/customer';
 function storeCustomers() {
     var customers = [
         {id: 1335221,customerName: 'LabCorp',timeZoneOffset: -7,phoneAccountId: 1335221,phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'},

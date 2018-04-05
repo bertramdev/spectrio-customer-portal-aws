@@ -1,7 +1,6 @@
-var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
 var customerURL = 'https:/'+proxyHost+'/dev/customer';
 var customersURL = 'https:/'+proxyHost+'/dev/customers';
-var aggregateURL = 'https:/'+proxyHost+'/dev/callLogAggregate';
+var aggregateURL = 'https:/'+proxyHost+'/dev/call-log-aggregate';
 var customerId;
 var accountId;
 var lastOffset = 0;

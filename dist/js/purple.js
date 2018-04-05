@@ -1,7 +1,6 @@
-var proxyHost = 'mnk2ecc85j.execute-api.us-east-1.amazonaws.com';
-var customerURL = 'https:/'+proxyHost+'/dev/customer';
-var purpleProxy = 'https:/'+proxyHost+'/dev/purpleProxy';
-var purpleFetchAggs = 'https:/'+proxyHost+'/dev/purpleFetchVenueDailyTotals';
+var customerURL = 'https://'+proxyHost+'/dev/customer';
+var purpleProxy = 'https://'+proxyHost+'/dev/purple-wifi-proxy';
+var purpleFetchAggs = 'https:/'+proxyHost+'/dev/wifi-fetch-venue-totals';
 var accountId = 4286;
 var customerId;
 var venues;
