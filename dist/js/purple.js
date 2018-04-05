@@ -11,13 +11,20 @@ function getVenues() {
     $.ajax(purpleProxy + '?customerId='+ customerId+ '&path='+path)
         .done(function(responseObj) {
             console.log(responseObj);
+            $('#venues-select').empty();
             if (responseObj.success && responseObj.data.venues) {
+                $('#venues-select').append('<option value="all">All Venues</name>');
                 venues = responseObj.data.venues;
                 venues.sort(function(a, b){return a.name.localeCompare(b.name);});
                 $.each(venues, function(idx, itm) {
                     $('#venues-select').append('<option value="'+itm.id+'">'+itm.name+'</name>');
                 });
                 $('.venues-enabled').removeAttr('disabled');
+                $('#venue-detail').show();
+                selectVenue('all');
+            }
+            else {
+                $('#venues-select').append('<option value="-1">Unable to load venues</name>');
             }
         });
 }
@@ -54,12 +61,6 @@ function myMap() {
         zoom: 14
     };
     map = new google.maps.Map(mapCanvas, mapOptions);
-    if (Cookies.get('loggedInX')!='true') {
-        $('#loginModal').modal('show');
-    }
-    else {
-        init();
-    }
 }
 
 function init() {
@@ -136,11 +137,15 @@ function loadAnalytics(matchId) {
 }
 
 function selectVenue(matchId) {
-    var venue = $.grep(venues, function(itm, idx) {
-        return itm.id == matchId;
-    });
-    var addressString = '';
-    if (venue.length) {
+    $('.export-btn').attr('disabled', 'true');       
+    let venue
+    if (matchId != '-1' && matchId != 'all') {
+        venue = $.grep(venues, function(itm, idx) {
+            return itm.id == parseInt(matchId);
+        });    
+    }
+    let addressString = '';
+    if (venue && venue.length) {
         addressString = venue[0].name + '\n'+venue[0].address1+'\n';
         if (venue[0].address2) addressString += venue[0].address2 + '\n';
         if (venue[0].address3) addressString += venue[0].address3 + '\n';
@@ -158,17 +163,51 @@ function selectVenue(matchId) {
         marker.setMap(map);
         map.setCenter(myCenter);
         // /dev/purpleFetchVenueDailyTotals?customerId=4286&venueId=12427&from=20180101&to=20180328
-        loadAnalytics(matchId);                    
+        map.setZoom(14);
+        $('.export-btn').removeAttr('disabled');       
+    }
+    else if (matchId == 'all') {
+        let onlineNow = 0, online24 = 0;
+        var bounds = new google.maps.LatLngBounds();
+        venues.forEach(function(venue) {
+            addressString += venue.name + '\n'+venue.address1+'\n';
+            if (venue.address2) addressString += venue.address2 + '\n';
+            if (venue.address3) addressString += venue.address3 + '\n';
+            if (venue.address4) addressString += venue.address4 + '\n';
+            if (venue.town) addressString += venue.town + '\n';
+            if (venue.hardware && venue.hardware.length) {
+                console.log(venue.hardware);
+                addressString += ('Hardware: '+venue.hardware.name + ' ('+venue.hardware.brand+')\n');
+            }
+            addressString += ('Status: '+venue.status + '\n\n');
+            var myCenter = new google.maps.LatLng(venue.latitude,venue.longitude);
+            var marker = new google.maps.Marker({position: myCenter, venueId:venue.id});
+            bounds.extend(myCenter);
+            marker.setMap(map);
+    
+        });       
+        map.fitBounds(bounds);
+        $('#onlineNow').text(onlineNow);
+        $('#online24').text(online24);
+
+    }
+    if (matchId != '-1') {
+        loadAnalytics(matchId);
     }
     $('[name="address"]').val(addressString);        
-    $('.export-btn').removeAttr('disabled');       
 }
 
 $(document).ready(function() {
+    if (Cookies.get('loggedInX')!='true') {
+        $('#loginModal').modal('show');
+    }
+    else {
+        init();
+    }
+    
     $('#venues-select').on('change', function(evt) {
-        var sel = $(this);
-        var matchId = parseInt(sel.val());
-        if (matchId > 0) {
+        let matchId = $(this).val();
+        if (matchId != '-1') {
             $('#venue-detail').show();
             selectVenue(matchId);
         }
@@ -220,29 +259,4 @@ $(document).ready(function() {
     });
 
 });
-// ADMIN            
-var purpleStore = 'https:/'+proxyHost+'/dev/purpleStore';
-var customerURL = 'https:/'+proxyHost+'/dev/customer';
-function storeAllVisitors() {
-    var range = parseInt($('#store-all').data('days'));
-    var s = moment().add(-1*range, 'days').format('YYYYMMDD');
-    console.log(s);
-    var e = moment().format('YYYYMMDD');
-    $.each(venues, function(idx, venue) {
-        var p = '/api/company/v1/venue/'+venue.id+'/visitors?from='+s+'&to='+e;
-        console.log(p);
-        $.ajax(purpleStore + '?customerId=4286&dataField=visitors&path='+p)
-        .done(function(responseObj) {
-            console.log(responseObj);
-        });
-    });
-    alert('Done!');
-}
 
-$(document).ready(function() {
-    $('#store-all').on('click', function() {
-        storeAllVisitors();
-    });
-
-});            
-// END ADMIN

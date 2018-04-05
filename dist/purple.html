@@ -42,7 +42,7 @@
                 <label for="venues" class="col-sm-2">Venues</label>
                 <div class="col-sm-8">
                     <select class="form-control" id="venues-select" name="venues">
-                        <option value="-1">Select Venue</option>
+                        <option value="-1">Loading...</option>
                     </select>
                     
                 </div>
@@ -187,27 +187,6 @@
                     </div>
                 </div>
             </div>
-            <!-- ADMIN -->
-            <div class="row"><hr class="col-sm-12"/></div>
-            <div class="form-group row" id="store-section">
-                <label for="name" class="col-sm-2">Admin</label>
-                <div class="col-sm-10">
-                    <div class="btn-group">
-                        <button type="button" id="store-all" data-days="30" class="btn btn-warning venues-enabled" disabled="true">Store All Guests Last <span id="visitor-days2">30</span> Days</button>
-                        <button type="button" class="btn btn-warning dropdown-toggle dropdown-toggle-split venues-enabled" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled="true">
-                            <span class="sr-only">Toggle Dropdown</span>
-                        </button>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item store-range" href="#" data-days="7">7 Days</a>
-                            <a class="dropdown-item store-range" href="#" data-days="30">30 Days</a>
-                            <a class="dropdown-item store-range" href="#" data-days="90">90 Days</a>
-                            <a class="dropdown-item store-range" href="#" data-days="180">180 Days</a>
-                            <a class="dropdown-item store-range" href="#" data-days="365">365 Days</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- END ADMIN -->
         </div>
         <script type="text/javascript">
             google.charts.load('current', {'packages':['corechart']});
