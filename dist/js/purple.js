@@ -126,7 +126,7 @@ function loadAnalytics(matchId) {
             for (let k in responseObj.data.source) {
                 sourceData.push([k.substr(0,1).toUpperCase()+k.substr(1), responseObj.data.source[k]]);
             }
-            console.log(data);
+            //console.log(data);
             let sourceChart = new google.visualization.PieChart(document.getElementById('source-pie'));
             sourceChart.draw(google.visualization.arrayToDataTable(sourceData));
 
@@ -179,7 +179,13 @@ function selectVenue(matchId) {
             if (venue.town) addressString += venue.town + '\n';
             if (venue.hardware && venue.hardware.length) {
                 console.log(venue.hardware);
-                addressString += ('Hardware: '+venue.hardware.name + ' ('+venue.hardware.brand+')\n');
+                addressString += 'Hardware: ';
+                venue.hardware.forEach(function(hardware, idx) {
+                    if (idx > 0) addressString += ', ';
+                    addressString += (hardware.name + ' ('+hardware.brand+')');
+                    
+                });
+                addressString += '\n';
             }
             addressString += ('Status: '+venue.status + '\n\n');
             var myCenter = new google.maps.LatLng(venue.latitude,venue.longitude);
