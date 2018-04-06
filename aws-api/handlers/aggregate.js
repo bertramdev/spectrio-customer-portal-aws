@@ -42,65 +42,74 @@ function getDailyInfo(customerId, externalId, fromString2, name) {
 
 module.exports.fetchVenueDailyTotals = (event, context, callback) => {
 	console.log('event');
-	var customerId = event.queryStringParameters ? event.queryStringParameters.customerId : null,
-		venueId = event.queryStringParameters ? event.queryStringParameters.venueId : null,
-		fromPrm = (event.queryStringParameters ? event.queryStringParameters.from : null),
-		toPrm = (event.queryStringParameters ? event.queryStringParameters.to : null),
-		includeDays = (event.queryStringParameters ? event.queryStringParameters.includeDays : null) == 'true',
-		fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment().add(-7, 'days'),
-		toDate = toPrm ? moment(toPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now),
-		fromQPrm = fromDate.format('YYYY-MM-DD'),
-		toQPrm = toDate.format('YYYY-MM-DD'),
-		dynamoDbTable = constants.DYNAMODB_TABLES.venueDailyTotals;
-	if (!customerId) {
-		callback(null, util.getCallbackBody(false, 400, 'Customer id missing'));
-		return;
-	}
-	if (!venueId) {
-		callback(null, util.getCallbackBody(false, 400, 'Venue id missing'));
-		return;
-	}
-	const dailyTotalsParams = {
-		TableName : dynamoDbTable,
-		IndexName: dynamoDbTable+'-customer-venue-index',
-		KeyConditionExpression: "#cvId = :customerVenueId and #d between :fromQPrm and :toQPrm",
-		ExpressionAttributeNames: { "#d":"date","#cvId":"customerVenueId" },		
-		ExpressionAttributeValues: { ":customerVenueId":(customerId+'-'+venueId), ":fromQPrm":fromQPrm, ":toQPrm":toQPrm }
-	}; 
-	console.log(dailyTotalsParams);
-	// being aync db query
-	dynamoDb.query(dailyTotalsParams, function(err, data) {
+	util.getCustomerData(event, function(err, customer){
 		if (err) {
-			console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
-		} else {
-			let outputData = getDailyInfo(customerId, venueId, fromQPrm, null);
-			outputData.startDate = fromQPrm;
-			outputData.endDate = toQPrm;
-			delete outputData.date;
-			data.Items.forEach(function(item) {
-				outputData.name = item.name;
-				for (let k in item) {
-					let v = item[k];
-					if (k != 'id' && k != 'customerId' &&
-						k != 'customerVenueId' && k != 'name' &&
-						k != 'externalId' && k != 'date' &&
-						Number.isInteger(v)
-					) {
-						outputData[k] = outputData[k] || 0;
-						outputData[k] += v;
-					}
-					else if (k == 'gender' || k == 'age' || k == 'source') {
-						for (let k1 in item[k]) {
-							outputData[k][k1] = outputData[k][k1] || 0;
-							outputData[k][k1] += item[k][k1];
+			callback(null, util.getCallbackBody(true, 400, err));
+		}
+		else {
+			let customerId = customer.id,
+				venueId = event.queryStringParameters ? event.queryStringParameters.venueId : null,
+				fromPrm = (event.queryStringParameters ? event.queryStringParameters.from : null),
+				toPrm = (event.queryStringParameters ? event.queryStringParameters.to : null),
+				includeDays = (event.queryStringParameters ? event.queryStringParameters.includeDays : null) == 'true',
+				fromDate = fromPrm ? moment(fromPrm, 'YYYYMMDD') : moment().add(-7, 'days'),
+				toDate = toPrm ? moment(toPrm, 'YYYYMMDD') : moment(constants.MOMENTS.now),
+				fromQPrm = fromDate.format('YYYY-MM-DD'),
+				toQPrm = toDate.format('YYYY-MM-DD'),
+				dynamoDbTable = constants.DYNAMODB_TABLES.venueDailyTotals;
+			if (!customerId) {
+				callback(null, util.getCallbackBody(false, 400, 'Customer id missing'));
+				return;
+			}
+			if (!venueId) {
+				callback(null, util.getCallbackBody(false, 400, 'Venue id missing'));
+				return;
+			}
+			const dailyTotalsParams = {
+				TableName : dynamoDbTable,
+				IndexName: dynamoDbTable+'-customer-venue-index',
+				KeyConditionExpression: "#cvId = :customerVenueId and #d between :fromQPrm and :toQPrm",
+				ExpressionAttributeNames: { "#d":"date","#cvId":"customerVenueId" },		
+				ExpressionAttributeValues: { ":customerVenueId":(customerId+'-'+venueId), ":fromQPrm":fromQPrm, ":toQPrm":toQPrm }
+			}; 
+			console.log(dailyTotalsParams);
+			// being aync db query
+			dynamoDb.query(dailyTotalsParams, function(err, data) {
+				if (err) {
+					console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+				} else {
+					let outputData = getDailyInfo(customerId, venueId, fromQPrm, null);
+					outputData.startDate = fromQPrm;
+					outputData.endDate = toQPrm;
+					delete outputData.date;
+					data.Items.forEach(function(item) {
+						outputData.name = item.name;
+						for (let k in item) {
+							let v = item[k];
+							if (k != 'id' && k != 'customerId' &&
+								k != 'customerVenueId' && k != 'name' &&
+								k != 'externalId' && k != 'date' &&
+								Number.isInteger(v)
+							) {
+								outputData[k] = outputData[k] || 0;
+								outputData[k] += v;
+							}
+							else if (k == 'gender' || k == 'age' || k == 'source') {
+								for (let k1 in item[k]) {
+									outputData[k][k1] = outputData[k][k1] || 0;
+									outputData[k][k1] += item[k][k1];
+								}
+							}
 						}
-					}
+					});
+					if (includeDays) outputData.days = data.Items;
+					callback(null, util.getCallbackBody(true, 200, 'Daily totals between '+fromDate.toString() + ' and '+toDate.toString(), outputData));
 				}
 			});
-			if (includeDays) outputData.days = data.Items;
-			callback(null, util.getCallbackBody(true, 200, 'Daily totals between '+fromDate.toString() + ' and '+toDate.toString(), outputData));
 		}
+
 	});
+
 }
 module.exports.calculateVenueDailyTotals = (event, context, callback) => {
 	console.log(event);
@@ -455,30 +464,37 @@ module.exports.calculateAllCustomerDailyTotals = (event, context, callback) => {
 };
 
 module.exports.search = (event, context, callback) => {
-    let customerId = event.queryStringParameters.customerId;
-    if (!customerId) {
-        callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
-        return;
-    }
+	util.getCustomerData(event, function(err, customer){
+		if (err) {
+			callback(null, util.getCallbackBody(true, 500, err.toString()));
+			return;				
+		}
+		else {
+			let customerId = customer.id;
+			delete event.queryStringParameters.customerId;			
+			util.searchES(customerId, constants.esDomain.indexVisitor, false, constants.esDomain.doctypeVisitor, event.body || event.queryStringParameters, (err, respBody) => {
+				let output = [],
+					meta = {};
+				if (respBody) {
+					let body = respBody instanceof String ? JSON.parse(respBody) : respBody;
+					if (body.hits && body.hits.hits) {
+						meta.total = body.hits.total;
+						body.hits.hits.forEach((itm)=>{
+							output.push(itm._source);
+						});
+						meta.count = output.length;
+						//output = body;
+					}	
+					else {
+						meta.total = 0;
+						meta.count = 0;
+					}
+				}        
+				callback(null, util.getCallbackBody(true, 200, 'Search completed', output, meta));
+			});
+		}
+	});
 
-    util.searchES(customerId, constants.esDomain.indexVisitor, false, constants.esDomain.doctypeVisitor, event.body, (err, respBody) => {
-        let output = [],
-            meta = {};
-        if (respBody) {
-            let body = respBody instanceof String ? JSON.parse(respBody) : respBody;
-            if (body.hits && body.hits.hits) {
-                meta.total = body.hits.total;
-                body.hits.hits.forEach((itm)=>{
-                    output.push(itm._source);
-                });
-                //output = body;
-            }
-            else {
-                meta.total = 0;
-            }
-        }        
-        callback(null, util.getCallbackBody(true, 200, 'Search completed', output, meta));
-    });
 };
 
 module.exports.init = (event, context, callback) => {

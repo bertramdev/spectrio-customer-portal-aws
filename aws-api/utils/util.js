@@ -17,12 +17,15 @@ module.exports.getCallbackBody = function(success, statusCode, message, data, me
 }
 
 var _elasticClient;
+var constants;
 var moment;
+var dynamoDb;
+var AWS;
 
 function getElasticClient() {
 	if (!_elasticClient) {
 		let elasticsearch = require('elasticsearch');
-		let AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
+		AWS = AWS || require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
 		AWS.config.region = process.env.REGION;
 		
 		_elasticClient = new elasticsearch.Client({  
@@ -71,7 +74,6 @@ module.exports.dropES = function(customerId, indexPrefix, callback) {
     getElasticClient().indices.delete({"index":indexName}, callback);
 }
 
-
 module.exports.putESTemplate = function(name, indexPattern, mappings, callback) {
     getElasticClient().indices.putTemplate({
         create:false,
@@ -82,4 +84,52 @@ module.exports.putESTemplate = function(name, indexPattern, mappings, callback) 
         }
     }, callback);
 
+};
+
+module.exports.getCustomerData = function(event, callback) {
+	//look for auth first
+	let customerId;
+	if (event.headers) {
+		customerId = event.headers['customerId'];
+	}
+	if (!customerId && event.queryStringParameters) {
+		customerId = event.queryStringParameters.customerId;
+	}
+	if (!customerId && event.body) {
+		customerId = event.body.customerId;
+	}
+	if (!customerId) {
+		callback('Customer id not found', null);			
+		return;
+	}
+	AWS = AWS || require('aws-sdk'); 
+	AWS.config.region = process.env.REGION;
+
+	dynamoDb = dynamoDb || new AWS.DynamoDB.DocumentClient();
+	const params = {
+		TableName: process.env.DYNAMODB_CUSTOMERS_TABLE,
+		Key: {
+			id: customerId
+		}
+	};
+        
+	dynamoDb.get(params, (error, data) => {
+		if (error) {
+			console.error(error);
+			callback(error, null);			
+			return;
+		}
+		else if (!data.Item) {
+			callback('Customer not found', null);
+			return;
+		}
+		else if (data.Item.active == false) {
+			callback('Customer is not active', null);			
+			return;
+		}
+		else {
+			callback(null, data.Item);
+			return;
+		}
+	});
 };

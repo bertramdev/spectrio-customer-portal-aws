@@ -10,45 +10,24 @@ AWS.config.region = process.env.REGION;
 
 module.exports.default = (event, context, callback) => {
 	console.log(event);
-
-	var customerId = (event.queryStringParameters ? event.queryStringParameters.customerId : null),
-		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
-	if (!customerId) {
-		callback(null, util.getCallbackBody(false, 400, 'Customer Id could not be found'));
-		return;
-	}
-
-	const params = {
-		TableName: dynamoDbTable,
-		Key: {
-			id: customerId
-		}
-	};
-        
-	dynamoDb.get(params, (error, data) => {
-		if (error) {
-			console.log('customer fetch failed');
-			console.error(error);
-			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));			
+    util.getCustomerData(event, function(error, customer){
+		if (error) {			console.error(error);
+			callback(null, util.getCallbackBody(false, 501, error.toString()));			
 			return;
 		}
-		else if (data.Item.active == false) {
-			callback(null, util.getCallbackBody(false, 401, 'Customer is not active'));
-			
-			return;
-		}
-		else if (!data.Item.purplePublicKey || !data.Item.purplePrivateKey) {
+		else if (!customer.purplePublicKey || !customer.purplePrivateKey) {
 			callback(null, util.getCallbackBody(false, 403, 'Customer is missing wifi access keys'));
 			return;
 		}
 		else {
-			console.log('customer fetch succeeded');
-			console.log(data.Item);
-			var publicKey = data.Item.purplePublicKey, //'ca722481fcff8361d4fe2ac3a476aba4'
-				privateKey = data.Item.purplePrivateKey, //'fcc4780fc12bdf89e0bc81371e45d9b3',
+			var publicKey = customer.purplePublicKey, //'ca722481fcff8361d4fe2ac3a476aba4'
+				privateKey = customer.purplePrivateKey, //'fcc4780fc12bdf89e0bc81371e45d9b3',
 				path = (event.queryStringParameters ? event.queryStringParameters.path : null) || '/api/company/v1/venues',
 				now = new Date(),
-				authInfo = auth.getAuthInfo(publicKey, privateKey, path, now), 
+				bodyString = event.body instanceof Object ? JSON.stringify(event.body) : (event.body ? event.body.toString() : ''),
+				authInfo = auth.getAuthInfo(publicKey, privateKey, path, now, bodyString),
+				accept = (event.headers ? event.headers['Accept'] : null) || 'application/json',
+				contentType = (event.headers ? event.headers['Content-Type'] : null) || 'application/json',
 				url = 'https://'+authInfo.portalDomain+path;				
 			console.log(authInfo);
 			console.log(url);
@@ -56,12 +35,12 @@ module.exports.default = (event, context, callback) => {
 				.get(url)
 				.timeout({
 					response: 25000,
-					deadline: 29000
+					deadline: 28000
 				})
-				.accept('application/json')
+				.accept(accept)
 				.set('Host', authInfo.portalDomain)
-				.set('Content-Type', 'application/json')
-				.set('Content-Length', '0')
+				.set('Content-Type', contentType)
+				.set('Content-Length', bodyString.length.toString())
 				.set('Date', authInfo.now.toUTCString()) 
 				.set('X-API-Authorization', authInfo.header)
 				.then(function(res) {
@@ -91,7 +70,6 @@ module.exports.default = (event, context, callback) => {
 					callback(null, util.getCallbackBody(false, info.response_code || 500, error.message, info));
 				});
 		}
-	});
-
+	});        
 };
 

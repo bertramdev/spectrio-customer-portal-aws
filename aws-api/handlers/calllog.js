@@ -136,8 +136,9 @@ module.exports.search = (event, context, callback) => {
         callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
         return;
     }
-
-    util.searchES(customerId, constants.esDomain.index, true, constants.esDomain.doctype, event.body, (err, respBody) => {
+    delete event.queryStringParameters.customerId
+    
+    util.searchES(customerId, constants.esDomain.index, true, constants.esDomain.doctype, event.body || event.queryStringParameters, (err, respBody) => {
         let output = [],
             meta = {};
         if (respBody) {
@@ -198,41 +199,21 @@ function formatMinuteRange(fromSec, toSec) {
 
 module.exports.aggregate = (event, context, callback) => {
 	console.log(event);
-
-	let customerId = (event.queryStringParameters ? event.queryStringParameters.customerId : null),
-		dynamoDbTable = constants.DYNAMODB_TABLES.customers;
-	if (!customerId) {
-		callback(null, util.getCallbackBody(false, 400, 'Customer Id could not be found'));
-		return;
-	}
-
-	const params = {
-		TableName: dynamoDbTable,
-		Key: {
-			id: customerId
-		}
-	};
-        
-	dynamoDb.get(params, (error, data) => {
+    util.getCustomerData(event, function(err, customer){
 		if (error) {
-			console.error(error);
-			callback(null, util.getCallbackBody(false, error.statusCode || 501, error.toString()));			
+			callback(null, util.getCallbackBody(false, 500, error.toString()));			
 			return;
-		}
-		else if (data.Item.active == false) {
-			callback(null, util.getCallbackBody(false, 401, 'Customer is not active'));
-			
-			return;
-		}
-		else if (!data.Item.phoneAccountId || !data.Item.phoneApiToken) {
+        }
+        else if (!customer.phoneAccountId || !customer.phoneApiToken) {
 			callback(null, util.getCallbackBody(false, 403, 'Customer is missing phone access keys'));
 			return;
-		}
-		else {
+        }
+        else {
+            let customerId = customer.id;
             let fromPrm = (event.queryStringParameters ? event.queryStringParameters.from : moment().add(-7, 'days').format('YYYYMMDD')),
-                toPrm = (event.queryStringParameters ? event.queryStringParameters.to : moment(constants.MOMENTS.now).format('YYYYMMDD')),
-                extensionId = (event.queryStringParameters ? event.queryStringParameters.extensionId : null),
-                tzOffsetString = formatTimezoneOffset(customer.timeZoneOffset);
+            toPrm = (event.queryStringParameters ? event.queryStringParameters.to : moment(constants.MOMENTS.now).format('YYYYMMDD')),
+            extensionId = (event.queryStringParameters ? event.queryStringParameters.extensionId : null),
+            tzOffsetString = formatTimezoneOffset(customer.timeZoneOffset);
             let query = {
                 "query": {
                     "bool": {
@@ -339,7 +320,7 @@ module.exports.aggregate = (event, context, callback) => {
                         });
                         body.aggregations.calls_over_time.buckets.forEach(function(itm){
                             let m = moment(itm.key);
-                            if (customer.timeZoneOffset) m.utcOffset(customer.timeZoneOffset)
+                            //if (customer.timeZoneOffset) m.utcOffset(customer.timeZoneOffset)
                             let key = m.format('MMM D');
                             output.calls_over_time.push([key, itm.doc_count, itm.date_avg_call_duration.value]);
                         });
@@ -356,11 +337,9 @@ module.exports.aggregate = (event, context, callback) => {
                     }
                 }        
                 callback(null, util.getCallbackBody(true, 200, 'Aggregation completed', output, meta));
-            });
-                    
-		}
-	});
-
+            });            
+        }
+    });
 };
 
 module.exports.drop = (event, context, callback) => {
