@@ -131,31 +131,55 @@ module.exports.init = (event, context, callback) => {
 };
 
 module.exports.search = (event, context, callback) => {
-    let customerId = event.queryStringParameters.customerId;
-    if (!customerId) {
-        callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
-        return;
-    }
-    delete event.queryStringParameters.customerId
-    
-    util.searchES(customerId, constants.esDomain.index, true, constants.esDomain.doctype, event.body || event.queryStringParameters, (err, respBody) => {
-        let output = [],
-            meta = {};
-        if (respBody) {
-            let body = respBody instanceof String ? JSON.parse(respBody) : respBody;
-            if (body.hits && body.hits.hits) {
-                meta.total = body.hits.total;
-                body.hits.hits.forEach((itm)=>{
-                    output.push(itm._source);
-                });
-                output = body;
-            }
-            else {
-                meta.total = 0;
-            }
-        }        
-        callback(null, util.getCallbackBody(true, 200, 'Search completed', output, meta));
-    });
+	util.getCustomerData(event, function(err, customer){
+		if (err) {
+			callback(null, util.getCallbackBody(true, 500, err.toString()));
+			return;				
+		}
+		else {
+			let customerId = customer.id;
+			delete event.queryStringParameters.customerId;			
+			let input;
+			if (event.body && event.body.length) {
+				input = event.body;
+			}
+			else {
+				input = event.queryStringParameters;
+				if (input.q) {
+					input.query =  {
+						"query_string" : {
+							"analyze_wildcard" : true,
+							"query" : input.q
+						}
+					};
+					delete input.q;
+				}
+			}
+			util.searchES(customerId, constants.esDomain.index, false, constants.esDomain.doctype, input, (err, respBody) => {
+				let output = [],
+					meta = {};
+				if (respBody) {
+					let body = respBody instanceof String ? JSON.parse(respBody) : respBody;
+					if (body.hits && body.hits.hits) {
+						meta.total = body.hits.total;
+						body.hits.hits.forEach((itm)=>{
+							output.push(itm._source);
+						});
+						meta.count = output.length;
+						//output = body;
+					}	
+					else {
+						meta.total = 0;
+						meta.count = 0;
+					}
+				}        
+				callback(null, util.getCallbackBody(true, 200, 'Search completed', output, meta));
+			});
+		}
+	});
+
+
+
 };
 
 function formatTimezoneOffset(offset) {

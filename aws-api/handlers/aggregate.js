@@ -471,8 +471,26 @@ module.exports.search = (event, context, callback) => {
 		}
 		else {
 			let customerId = customer.id;
+			event.queryStringParameters = event.queryStringParameters || {};
 			delete event.queryStringParameters.customerId;			
-			util.searchES(customerId, constants.esDomain.indexVisitor, false, constants.esDomain.doctypeVisitor, event.body || event.queryStringParameters, (err, respBody) => {
+			let input;
+			//console.log(event.body);
+			if (event.body && event.body.length) {
+				input = event.body;
+			}
+			else {
+				input = event.queryStringParameters;
+				if (input.q) {
+					input.query =  {
+						"query_string" : {
+							"analyze_wildcard" : true,
+							"query" : input.q
+						}
+					};
+					delete input.q;
+				}
+			}
+			util.searchES(customerId, constants.esDomain.indexVisitor, false, constants.esDomain.doctypeVisitor, input, (err, respBody) => {
 				let output = [],
 					meta = {};
 				if (respBody) {
