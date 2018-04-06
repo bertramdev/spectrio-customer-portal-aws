@@ -183,23 +183,27 @@ module.exports.calculateVenueDailyTotals = (event, context, callback) => {
 									console.log(e);
 								}
 							}
-							// store daily totales
-							let params = {
-								TableName: constants.DYNAMODB_TABLES.venueDailyTotals,
-								Key: { id: dailyTotals.id },
-								Item: dailyTotals
-							};
-							dynamoDb.put(params, (error) => {
-								if (error) {
-									console.error(error);
-									console.log('Could not save with totals '+params.Key.id);
-								}
-								else {
-									console.log('Saved with totals '+params.Key.id);
-									console.log(dailyTotals);
-								}
-							});
 							successCount++;	  
+						});
+						util.postToES(customerId, constants.esDomain.indexVisitor, constants.esDomain.doctypeVisitor, visitors, function(err, data) {
+							console.log('err:'+err);
+							console.log('data:'+data);
+						});
+						// store daily totales
+						let params = {
+							TableName: constants.DYNAMODB_TABLES.venueDailyTotals,
+							Key: { id: dailyTotals.id },
+							Item: dailyTotals
+						};
+						dynamoDb.put(params, (error) => {
+							if (error) {
+								console.error(error);
+								console.log('Could not save with totals '+params.Key.id);
+							}
+							else {
+								console.log('Saved with totals '+params.Key.id);
+								console.log(dailyTotals);
+							}
 						});
 					}
 				})
@@ -448,4 +452,16 @@ module.exports.calculateAllCustomerDailyTotals = (event, context, callback) => {
         }
     });
 	
-};	
+};
+
+module.exports.init = (event, context, callback) => {
+	util.putESTemplate('visitor_index_template', constants.esDomain.indexVisitor+"*", constants.VISITOR_MAPPINGS, function(err, respBody) {
+        if (err) {
+            console.log(err);
+            callback(null, util.getCallbackBody(true, 400, 'init failed: '+err));
+        }
+        else {
+            callback(null, util.getCallbackBody(true, 200, 'init completed: '+JSON.stringify(respBody)));
+        }                    
+    });
+};

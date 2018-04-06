@@ -31,10 +31,72 @@ module.exports.esDomain = {
     endpoint: module.exports.ELASTIC_URL,
     index: 'call_logs',
     doctype: 'call_log',
+    indexVisitor: 'visitors',
+    doctypeVisitor: 'visitor',
     log: 'error',
     connectionClass: require('http-aws-es')
 };
 module.exports.DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+
+module.exports.VISITOR_MAPPINGS = {
+	"visitor": {
+		"properties" : {
+			"id" : {
+				"type": "keyword",
+				"index": true
+            },
+			"first_name" : {
+				"type": "text",
+				"index": true
+            },
+			"last_name" : {
+				"type": "text",
+				"index": true
+            },
+			"gender" : {
+				"type": "keyword",
+				"index": true
+            },
+			"date_of_birth" : {
+				"type": "date",
+				"index": true
+            },
+			"location" : {
+				"type": "keyword",
+				"index": true
+            },
+			"email" : {
+				"type": "text",
+				"index": true
+            },
+			"mobile" : {
+				"type": "text",
+				"index": true
+            },
+			"first_seen" : {
+				"type": "date",
+				"index": true
+            },
+			"last_seen" : {
+				"type": "date",
+				"index": true
+            },
+			"mac" : {
+				"type": "keyword",
+				"index": false
+            },
+			"visits" : {
+				"type": "keyword",
+				"index": true
+            },
+			"source" : {
+				"type": "keyword",
+				"index": true
+            }
+		}		
+	}
+};	
 
 module.exports.CALL_LOG_MAPPINGS = {
 	"call_log" : {
@@ -43,6 +105,9 @@ module.exports.CALL_LOG_MAPPINGS = {
 				"type": "keyword",
 				"index": true
             },
+			"timestamp" : {
+				"type" : "long"
+			},
 			"caller_id" : {
 				"type": "text",
 				"index": true

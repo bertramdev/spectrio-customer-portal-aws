@@ -15,88 +15,55 @@ const path = require('path');
 const PAGE_SIZE = 250;
 const sns = new AWS.SNS();
 
-const connectionClass = require('http-aws-es');
-const elasticsearch = require('elasticsearch');
-const elasticClient = new elasticsearch.Client({  
-    host: constants.esDomain.endpoint,
-    log: constants.esDomain.log,
-    connectionClass: constants.esDomain.connectionClass,
-    amazonES: { credentials: new AWS.EnvironmentCredentials('AWS') }
-});
-
 var areaCodes;
 
-function postToES(customerId, docs, tzOffset, callback) {
-    var body = [],
-        indices = {};
-    docs.forEach(function(item) {
-        if (item['@controls']) delete item['@controls'];
-        if (item.extension && item.extension['@controls']) delete item.extension['@controls'];
-        if (item.details) {
-            item.details.forEach(function(detail, idx){
-                if (detail.start_time) {
-                    detail.start_time_ms = detail.start_time * 1000;
-                    if (item.details.length > (idx+1) && item.details[idx+1].start_time) {
-                        detail.duration = item.details[idx+1].start_time - detail.start_time;
-                    }
+function formatDoc(item, tzOffset) {
+    if (item['@controls']) delete item['@controls'];
+    if (item.extension && item.extension['@controls']) delete item.extension['@controls'];
+    if (item.details) {
+        item.details.forEach(function(detail, idx){
+            if (detail.start_time) {
+                detail.start_time_ms = detail.start_time * 1000;
+                if (item.details.length > (idx+1) && item.details[idx+1].start_time) {
+                    detail.duration = item.details[idx+1].start_time - detail.start_time;
                 }
-                if (detail.type && detail.called_number) {
-                    detail.type_called_number = detail.type +' '+ detail.called_number;
-                }
-            });
-        }
-        //console.log(item.caller_id);
-        if (item.caller_id && item.caller_id.length > 4) {
-            let area_code = item.caller_id.substr(0,5);
-            if (area_code.substring(0,1) == '+') area_code = area_code.substr(1,4);
-            if (area_code.substring(0,1) == '1') area_code = area_code.substr(1,3);
-            area_code = area_code.substring(0,3);
-            //console.log('-> "'+area_code+'"');
-            let areaCodeData = areaCodes.AREA_CODES_LOCATION[area_code];
-            if (areaCodeData) {
-                item.area_code = area_code;
-                item.localities = areaCodeData.localities;
-                item.state = areaCodeData.state;
-                item.country_code = areaCodeData.country;
-                item.tz_offset = areaCodeData.tzOffset;
-                item.location = areaCodeData.geo_point;
-                item.area_code_display = '('+ area_code+') '+item.localities+' '+item.state;
             }
-            //else {
-            //    console.log('no area code data found');
-            //}
+            if (detail.type && detail.called_number) {
+                detail.type_called_number = detail.type +' '+ detail.called_number;
+            }
+        });
+    }
+    //console.log(item.caller_id);
+    if (item.caller_id && item.caller_id.length > 4) {
+        let area_code = item.caller_id.substr(0,5);
+        if (area_code.substring(0,1) == '+') area_code = area_code.substr(1,4);
+        if (area_code.substring(0,1) == '1') area_code = area_code.substr(1,3);
+        area_code = area_code.substring(0,3);
+        //console.log('-> "'+area_code+'"');
+        let areaCodeData = areaCodes.AREA_CODES_LOCATION[area_code];
+        if (areaCodeData) {
+            item.area_code = area_code;
+            item.localities = areaCodeData.localities;
+            item.state = areaCodeData.state;
+            item.country_code = areaCodeData.country;
+            item.tz_offset = areaCodeData.tzOffset;
+            item.location = areaCodeData.geo_point;
+            item.area_code_display = '('+ area_code+') '+item.localities+' '+item.state;
         }
-        let m = moment(1000*item.start_time_epoch);
-        // try to use offset of area code
-        if (item.tz_offset != undefined && item.tz_offset != null) m.utcOffset(item.tz_offset);
-        else if (tzOffset) m.utcOffset(tzOffset); // else use offset of account
-        item.start_hour = m.hour();
-        item.start_day = m.day();
-        
-        let indexName = constants.esDomain.index+'_'+customerId+'_'+m.format('YYYYMM');
-        body.push({"index":{"_id":item.id, "_index": indexName}});
-        body.push(item);
-    });
-    elasticClient.bulk({refresh:true, type: constants.esDomain.doctype, body: body}, callback);
+        //else {
+        //    console.log('no area code data found');
+        //}
+    }
+    let m = moment(1000*item.start_time_epoch);
+    // try to use offset of area code
+    if (item.tz_offset != undefined && item.tz_offset != null) m.utcOffset(item.tz_offset);
+    else if (tzOffset) m.utcOffset(tzOffset); // else use offset of account
+    item.start_hour = m.hour();
+    item.start_day = m.day();
+    item.timestamp = 1000*item.start_time_epoch;
+    return item;    
 }
 
-function searchES(customerId, query, callback) {
-    query = query || {"query": { "match_all": {} }, "size":20};
-    if (query instanceof String) query = JSON.parse(query);
-    elasticClient.search({
-        index: constants.esDomain.index+'_'+customerId+'_*',
-        type: constants.esDomain.doctype,
-        expandWildcards: 'all',
-        allowNoIndices: true,
-        body: query
-      }).then(function (resp) {
-          console.log(resp);
-          callback(null, resp)
-      }, function (err) {
-          console.trace(err.message);
-          callback(err, null);
-      });
-}
 
 function dropES(customerId, callback) {
     let indexName = constants.esDomain.index + (customerId ? '_'+customerId+'_*' : '_*'); 
@@ -118,7 +85,11 @@ function fetchCallLogs(customerId, url, header, offset, tzOffset) {
             if (res.body && res.body.items) {
                 let docs = res.body.items;
                 console.log(' found phone API '+docs.length+' call logs');
-                postToES(customerId, docs, tzOffset, (err, respBody) => {
+                let esDocs = [];
+                docs.forEach(function(doc){
+                    esDocs.push(formatDoc(doc, tzOffset));
+                });
+                util.postToES(customerId, constants.esDomain.index, constants.esDomain.doctype,  esDocs, (err, respBody) => {
                     if (err) {
                         console.log(err);
                         console.log(' DID NOT save phone API '+docs.length+' call logs');
@@ -148,14 +119,7 @@ function fetchCallLogs(customerId, url, header, offset, tzOffset) {
 }
 
 module.exports.init = (event, context, callback) => {
-    elasticClient.indices.putTemplate({
-        create:false,
-        name: 'call_log_index_template',
-        body: {
-            index_patterns: [constants.esDomain.index+"*"],
-            mappings: constants.CALL_LOG_MAPPINGS
-        }
-    }, function(err, respBody) {
+	util.putESTemplate('call_log_index_template', constants.esDomain.index+"*", constants.CALL_LOG_MAPPINGS, function(err, respBody) {
         if (err) {
             console.log(err);
             callback(null, util.getCallbackBody(true, 400, 'init failed: '+err));
@@ -164,8 +128,8 @@ module.exports.init = (event, context, callback) => {
             callback(null, util.getCallbackBody(true, 200, 'init completed: '+JSON.stringify(respBody)));
         }                    
     });
+};
 
-};    
 module.exports.search = (event, context, callback) => {
     let customerId = event.queryStringParameters.customerId;
     if (!customerId) {
@@ -173,7 +137,7 @@ module.exports.search = (event, context, callback) => {
         return;
     }
 
-    searchES(customerId, event.body, (err, respBody) => {
+    util.searchES(customerId, constants.esDomain.index, constants.esDomain.doctype, event.body, (err, respBody) => {
         let output = [],
             meta = {};
         if (respBody) {
@@ -335,7 +299,7 @@ module.exports.aggregate = (event, context, callback) => {
             if (extensionId) {
                 query.query.bool.must.push({"term":{"extension.id":parseInt(extensionId)}});
             }
-            searchES(customerId, query, (err, respBody) => {
+            util.searchES(customerId, constants.esDomain.index, constants.esDomain.doctype, query, (err, respBody) => {
                 let output = {
                         calls_over_time:[['Day','Count','Average Duration']],
                         hour_count:[['Hour','Count']],
@@ -399,40 +363,13 @@ module.exports.aggregate = (event, context, callback) => {
 
 };
 
-module.exports.post = (event, context, callback) => {
-    const item = JSON.parse(event.body);//.replace(/""/g, 'null'));
-    const customerId = event.queryStringParameters.customerId;
-    postToES(customerId, [item], function(err, respBody) {
-        callback(null, util.getCallbackBody(true, 200, 'Post completed: '+JSON.stringify(respBody)));
-    });
-};
-
-module.exports.updateMapping = (event, context, callback) => {
-    elasticClient.indices.putMapping({
-        index: constants.esDomain.index+'*',
-        allowNoIndices: true,
-        expandWildcards: 'all',
-        updateAllTypes: true,
-        type: constants.esDomain.doctype,
-        body: constants.CALL_LOG_MAPPINGS.call_log
-    }, function(err, respBody) {
-        if (err) {
-            console.log(err);
-            callback(null, util.getCallbackBody(true, 400, 'updateMapping failed: '+err));
-        }
-        else {
-            callback(null, util.getCallbackBody(true, 200, 'updateMapping completed: '+JSON.stringify(respBody)));
-        }                    
-    });
-};
-
 module.exports.drop = (event, context, callback) => {
     let customerId = event.queryStringParameters.customerId;
     if (!customerId) {
         callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
         return;
     }
-    dropES(customerId, function(err, respBody) {
+    util.dropES(customerId, function(err, respBody) {
         if (err) {
             console.log(err);
             callback(null, util.getCallbackBody(true, 400, 'Drop failed: '+err));
@@ -444,7 +381,7 @@ module.exports.drop = (event, context, callback) => {
 };
 
 module.exports.dropAll = (event, context, callback) => {
-    dropES(null, function(err, respBody) {
+    util.dropES(null, constants.esDomain.index, constants.esDomain.doctype, function(err, respBody) {
         if (err) {
             console.log(err);
             callback(null, util.getCallbackBody(true, 400, 'Drop failed: '+err));

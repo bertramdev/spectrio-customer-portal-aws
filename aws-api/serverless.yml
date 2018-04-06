@@ -135,6 +135,15 @@ functions:
           path: wifi-fetch-venue-totals
           method: get
           cors: true
+  wifiInit:
+    handler: /handlers/calllog.init
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-init
+    timeout: 29
+    events:
+      - http:
+          path: wifi-init
+          method: get
+          cors: true
   customer:
     handler: /handlers/customer.default
     name: ${self:service}-${opt:stage, self:provider.stage}-customer
@@ -183,24 +192,6 @@ functions:
     events:
       - http:
           path: call-log-aggregate
-          method: get
-          cors: true
-  callLogPost:
-    handler: /handlers/calllog.post
-    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-post
-    timeout: 29
-    events:
-      - http:
-          path: call-log-post
-          method: get
-          cors: true
-  callLogUpdateMapping:
-    handler: /handlers/calllog.updateMapping
-    name: ${self:service}-${opt:stage, self:provider.stage}-call-log-mapping
-    timeout: 29
-    events:
-      - http:
-          path: call-log-mapping
           method: get
           cors: true
   callLogUpdateInit:
