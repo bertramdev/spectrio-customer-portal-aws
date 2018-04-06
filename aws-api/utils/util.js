@@ -48,11 +48,11 @@ module.exports.postToES = function(customerId, indexPrefix, docType, docs, callb
     getElasticClient().bulk({refresh:true, type: docType, body: body}, callback);
 }
 
-module.exports.searchES = function(customerId, indexPrefix, docType, query, callback) {
+module.exports.searchES = function(customerId, indexPrefix, timeBased, docType, query, callback) {
     query = query || {"query": { "match_all": {} }, "size":20};
     if (query instanceof String) query = JSON.parse(query);
     getElasticClient().search({
-        index: indexPrefix+'_'+customerId+'_*',
+        index: indexPrefix+'_'+customerId+(timeBased?'_*':''),
         type: docType,
         expandWildcards: 'all',
         allowNoIndices: true,

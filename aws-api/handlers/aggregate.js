@@ -454,6 +454,33 @@ module.exports.calculateAllCustomerDailyTotals = (event, context, callback) => {
 	
 };
 
+module.exports.search = (event, context, callback) => {
+    let customerId = event.queryStringParameters.customerId;
+    if (!customerId) {
+        callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
+        return;
+    }
+
+    util.searchES(customerId, constants.esDomain.indexVisitor, false, constants.esDomain.doctypeVisitor, event.body, (err, respBody) => {
+        let output = [],
+            meta = {};
+        if (respBody) {
+            let body = respBody instanceof String ? JSON.parse(respBody) : respBody;
+            if (body.hits && body.hits.hits) {
+                meta.total = body.hits.total;
+                body.hits.hits.forEach((itm)=>{
+                    output.push(itm._source);
+                });
+                //output = body;
+            }
+            else {
+                meta.total = 0;
+            }
+        }        
+        callback(null, util.getCallbackBody(true, 200, 'Search completed', output, meta));
+    });
+};
+
 module.exports.init = (event, context, callback) => {
 	util.putESTemplate('visitor_index_template', constants.esDomain.indexVisitor+"*", constants.VISITOR_MAPPINGS, function(err, respBody) {
         if (err) {

@@ -137,7 +137,7 @@ module.exports.search = (event, context, callback) => {
         return;
     }
 
-    util.searchES(customerId, constants.esDomain.index, constants.esDomain.doctype, event.body, (err, respBody) => {
+    util.searchES(customerId, constants.esDomain.index, true, constants.esDomain.doctype, event.body, (err, respBody) => {
         let output = [],
             meta = {};
         if (respBody) {
@@ -299,7 +299,7 @@ module.exports.aggregate = (event, context, callback) => {
             if (extensionId) {
                 query.query.bool.must.push({"term":{"extension.id":parseInt(extensionId)}});
             }
-            util.searchES(customerId, constants.esDomain.index, constants.esDomain.doctype, query, (err, respBody) => {
+            util.searchES(customerId, constants.esDomain.index, true, constants.esDomain.doctype, query, (err, respBody) => {
                 let output = {
                         calls_over_time:[['Day','Count','Average Duration']],
                         hour_count:[['Hour','Count']],

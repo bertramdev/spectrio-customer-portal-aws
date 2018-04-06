@@ -135,6 +135,19 @@ functions:
           path: wifi-fetch-venue-totals
           method: get
           cors: true
+  wifiSearch:
+    handler: /handlers/aggregate.search
+    name: ${self:service}-${opt:stage, self:provider.stage}-wifi-search
+    timeout: 29
+    events:
+      - http:
+          path: wifi-search
+          method: get
+          cors: true
+      - http:
+          path: wifi-search
+          method: post
+          cors: true
   wifiInit:
     handler: /handlers/calllog.init
     name: ${self:service}-${opt:stage, self:provider.stage}-wifi-init
