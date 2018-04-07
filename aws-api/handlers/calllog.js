@@ -223,7 +223,7 @@ function formatMinuteRange(fromSec, toSec) {
 
 module.exports.aggregate = (event, context, callback) => {
 	console.log(event);
-    util.getCustomerData(event, function(err, customer){
+    util.getCustomerData(event, function(error, customer){
 		if (error) {
 			callback(null, util.getCallbackBody(false, 500, error.toString()));			
 			return;
