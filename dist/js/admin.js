@@ -4,6 +4,7 @@ var purpleAggregate = 'https://'+proxyHost+'/dev/wifi-trigger-calc-cust-venues-t
 var customerURL = 'https://'+proxyHost+'/dev/customer';
 var visitorsURL = 'https://'+proxyHost+'/dev/wifi-search';
 var callLogsURL = 'https://'+proxyHost+'/dev/call-log-search';
+var purpleProxyURL = 'https://'+proxyHost+'/dev/purple-wifi-proxy';
 
 var customers = [
     {id: 1335221,customerName: 'LabCorp',timeZoneOffset: -7,phoneAccountId: 1335221,phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'},
@@ -112,7 +113,7 @@ $(document).ready(function() {
         let bytes  = CryptoJS.AES.decrypt(ciphertext.toString(), sharedKey);
         var plaintext = bytes.toString(CryptoJS.enc.Utf8);
         
-        $('#output').text('ORIGINAL:\n'+json+'\n\nENCRYPTED:\n'+ciphertext+'\n\nDECRYPTED:\n'+plaintext);
+        $('#output').text('AES SHARED KEY:\n'+sharedKey+'\n\nORIGINAL:\n'+json+'\n\nENCRYPTED:\n'+ciphertext+'\n\nDECRYPTED:\n'+plaintext);
     });
 
     $('#search-visitors').on('click', function() {
@@ -124,6 +125,13 @@ $(document).ready(function() {
     });
     $('#search-call-logs').on('click', function() {
         $.ajax(callLogsURL + '?Spectrio-Portal-Auth='+encodeURIComponent(encryptCustomer()))
+        .done(function(responseObj) {
+            console.log(responseObj);
+            $('#output').text(JSON.stringify(responseObj, null, 2));
+        });
+    });
+    $('#purple-proxy').on('click', function() {
+        $.ajax(purpleProxyURL + '?Spectrio-Portal-Auth='+encodeURIComponent(encryptCustomer())+'&path=/api/company/v1/venues')
         .done(function(responseObj) {
             console.log(responseObj);
             $('#output').text(JSON.stringify(responseObj, null, 2));
