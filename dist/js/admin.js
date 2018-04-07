@@ -113,7 +113,7 @@ $(document).ready(function() {
         let bytes  = CryptoJS.AES.decrypt(ciphertext.toString(), sharedKey);
         var plaintext = bytes.toString(CryptoJS.enc.Utf8);
         
-        $('#output').text('AES SHARED KEY:\n'+sharedKey+'\n\nORIGINAL:\n'+json+'\n\nENCRYPTED:\n'+ciphertext+'\n\nDECRYPTED:\n'+plaintext);
+        $('#output').text('AES SHARED KEY:\n'+sharedKey+'\n\nORIGINAL:\n'+json+'\n\nENCRYPTED:\n'+ciphertext+'\n\nENCRYPTED + URI ENCODED:\n'+encodeURIComponent(ciphertext)+'\n\nDECRYPTED:\n'+plaintext);
     });
 
     $('#search-visitors').on('click', function() {
