@@ -1,25 +1,30 @@
 // ADMIN
+var sharedKey = 'S2B4PFPiQKPCVoPU4l8EM8A3AsIGCXVXVfEbcTXB7sZsYqjJpJ58qVNbHzHCbt2';
 var purpleAggregate = 'https://'+proxyHost+'/dev/wifi-trigger-calc-cust-venues-totals';
 var customerURL = 'https://'+proxyHost+'/dev/customer';
+var visitorsURL = 'https://'+proxyHost+'/dev/wifi-search';
+var callLogsURL = 'https://'+proxyHost+'/dev/call-log-search';
+
+var customers = [
+    {id: 1335221,customerName: 'LabCorp',timeZoneOffset: -7,phoneAccountId: 1335221,phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'},
+    {id: 113703,customerName: 'Bill Richie',timeZoneOffset: -7,phoneAccountId: 113703,phoneApiToken: 'Z50ACUNZW4GtaTT0rp6ugN7HEVdtRB2Q2AAJMM8IVuXlZUCL'},
+    {id: 108193,customerName: 'Tastea Costa Mesa',timeZoneOffset: -7,phoneAccountId: 108193,phoneApiToken: 'zZ79AMhUzyQJp9T8CbNlKRcnnCPBbvfwHIGj9VEIZNhymL1k'},
+    {id: 4286, customerName: 'Spectrio',purpleAccountId: 4286,timeZoneOffset: -7,purplePublicKey: 'ca722481fcff8361d4fe2ac3a476aba4',purplePrivateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3',phoneAccountId: 74241,phoneApiToken: 'YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H'},
+    {customerName: "Intellitouch",id: 51503,phoneAccountId: 51503,phoneApiToken: "ZtAutZU7Bkt9gjxd45KyJA8Bn1FePVpb3eUjy2dv3JD86rEF",timeZoneOffset: -7},
+    {customerName: "acquisitions",id: 71144,phoneAccountId: 71144,phoneApiToken: "W7x3KHqn9MpYMSvQv3kpRQi5TIjxe0gZ5WnqNgCjE8kBWC4K",timeZoneOffset: -7},
+    {customerName: "guardian-host",id: 98346,phoneAccountId: 98346,phoneApiToken: "aLHVqdiywth8iP1CgQfXVNBzwjcbBxPEkSB5nQ8bksZvkJtR",timeZoneOffset: -7},
+    {customerName: "brazzeal-tire",id: 100492,phoneAccountId: 100492,phoneApiToken: "5iAlWYsYsIsXATD8UcDEZ3OYkig4wVKZ9p9pUW8ON6Eo0Gun",timeZoneOffset: -7},
+    {customerName: "tulsa-siding",id: 100980,phoneAccountId: 100980,phoneApiToken: "vkSMv5cfQ2OXZlHRdxSmn9IRilAuPp02OkTko4tCXtmtppOm",timeZoneOffset: -7},
+    {customerName: "bpb-manwaring",id: 103977,phoneAccountId: 103977,phoneApiToken: "GN4pTLOHnEoS9oHlnYH5VovbOZXcD9ben8Cvvz3t0yM2tr3H",timeZoneOffset: -7},
+    {customerName: "leone",id: 106656,phoneAccountId: 106656,phoneApiToken: "rzRbVb2zTGGJKMx1wpBSG4zhZwwRlGAdGaJOUeQEjES3SleV",timeZoneOffset: -7},
+    {customerName: "bpb-romero",id: 108020,phoneAccountId: 108020,phoneApiToken: "8H2BRrychhnwERxNsowUQIe2VpvnTJ4hsoEsJpUpywqqMwWH",timeZoneOffset: -7},
+    {customerName: "tastea-warehouse",id: 108046,phoneAccountId: 108046,phoneApiToken: "nDvi1Y5t9S9r5W2vjRQ8vZy4RxDlIQAqU19FP6FAYe0It5FP",timeZoneOffset: -7},
+    {customerName: "tastea-garden",id: 108161,phoneAccountId: 108161,phoneApiToken: "nXmQgIyZ2iE1CjeaM2QntpW9XeolUAHSdlx2CagWLKBBS48u",timeZoneOffset: -7},
+    {customerName: "tastea-rowland",id: 108191,phoneAccountId: 108191,phoneApiToken: "N4nyRu0BC3Qm0npilx4r2Y0dRcsO1MNh05rLf2xUjhWsAjgs",timeZoneOffset: -7},
+    {customerName: "bpb-store149",id: 113855,phoneAccountId: 113855,phoneApiToken: "z8oaMG78nNkPmIOrC7XEzLlnzpr3Cl8ieD7dClQf1BpM79hv",timeZoneOffset: -7}        
+];
+
 function storeCustomers() {
-    var customers = [
-        {id: 1335221,customerName: 'LabCorp',timeZoneOffset: -7,phoneAccountId: 1335221,phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'},
-        {id: 113703,customerName: 'Bill Richie',timeZoneOffset: -7,phoneAccountId: 113703,phoneApiToken: 'Z50ACUNZW4GtaTT0rp6ugN7HEVdtRB2Q2AAJMM8IVuXlZUCL'},
-        {id: 108193,customerName: 'Tastea Costa Mesa',timeZoneOffset: -7,phoneAccountId: 108193,phoneApiToken: 'zZ79AMhUzyQJp9T8CbNlKRcnnCPBbvfwHIGj9VEIZNhymL1k'},
-        {id: 4286, customerName: 'Spectrio',purpleAccountId: 4286,timeZoneOffset: -7,purplePublicKey: 'ca722481fcff8361d4fe2ac3a476aba4',purplePrivateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3',phoneAccountId: 74241,phoneApiToken: 'YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H'},
-        {customerName: "Intellitouch",id: 51503,phoneAccountId: 51503,phoneApiToken: "ZtAutZU7Bkt9gjxd45KyJA8Bn1FePVpb3eUjy2dv3JD86rEF",timeZoneOffset: -7},
-        {customerName: "acquisitions",id: 71144,phoneAccountId: 71144,phoneApiToken: "W7x3KHqn9MpYMSvQv3kpRQi5TIjxe0gZ5WnqNgCjE8kBWC4K",timeZoneOffset: -7},
-        {customerName: "guardian-host",id: 98346,phoneAccountId: 98346,phoneApiToken: "aLHVqdiywth8iP1CgQfXVNBzwjcbBxPEkSB5nQ8bksZvkJtR",timeZoneOffset: -7},
-        {customerName: "brazzeal-tire",id: 100492,phoneAccountId: 100492,phoneApiToken: "5iAlWYsYsIsXATD8UcDEZ3OYkig4wVKZ9p9pUW8ON6Eo0Gun",timeZoneOffset: -7},
-        {customerName: "tulsa-siding",id: 100980,phoneAccountId: 100980,phoneApiToken: "vkSMv5cfQ2OXZlHRdxSmn9IRilAuPp02OkTko4tCXtmtppOm",timeZoneOffset: -7},
-        {customerName: "bpb-manwaring",id: 103977,phoneAccountId: 103977,phoneApiToken: "GN4pTLOHnEoS9oHlnYH5VovbOZXcD9ben8Cvvz3t0yM2tr3H",timeZoneOffset: -7},
-        {customerName: "leone",id: 106656,phoneAccountId: 106656,phoneApiToken: "rzRbVb2zTGGJKMx1wpBSG4zhZwwRlGAdGaJOUeQEjES3SleV",timeZoneOffset: -7},
-        {customerName: "bpb-romero",id: 108020,phoneAccountId: 108020,phoneApiToken: "8H2BRrychhnwERxNsowUQIe2VpvnTJ4hsoEsJpUpywqqMwWH",timeZoneOffset: -7},
-        {customerName: "tastea-warehouse",id: 108046,phoneAccountId: 108046,phoneApiToken: "nDvi1Y5t9S9r5W2vjRQ8vZy4RxDlIQAqU19FP6FAYe0It5FP",timeZoneOffset: -7},
-        {customerName: "tastea-garden",id: 108161,phoneAccountId: 108161,phoneApiToken: "nXmQgIyZ2iE1CjeaM2QntpW9XeolUAHSdlx2CagWLKBBS48u",timeZoneOffset: -7},
-        {customerName: "tastea-rowland",id: 108191,phoneAccountId: 108191,phoneApiToken: "N4nyRu0BC3Qm0npilx4r2Y0dRcsO1MNh05rLf2xUjhWsAjgs",timeZoneOffset: -7},
-        {customerName: "bpb-store149",id: 113855,phoneAccountId: 113855,phoneApiToken: "z8oaMG78nNkPmIOrC7XEzLlnzpr3Cl8ieD7dClQf1BpM79hv",timeZoneOffset: -7}        
-    ];
     $('#output').text('');
 
     $.each(customers, function(idx, customer){
@@ -82,6 +87,48 @@ $(document).ready(function() {
         }
     }
     dd.append(o);
+    customers.forEach(function(customer, idx) {
+        $('#customer-select').append('<option value="'+idx+'">'+customer.customerName+"</option>");
+    });
+    let encryptCustomer = () => {
+        let customer = customers[parseInt($('#customer-select').val())];
+        let clone = Object.assign({}, customer); 
+        clone.timestamp = new Date().getTime();        
+        let json = JSON.stringify(clone, null, 2);
+        // Encrypt
+        let ciphertext = CryptoJS.AES.encrypt(json,sharedKey);
+        return ciphertext;
+    };
+
+    $('#generate-auth').on('click', function() {
+        let customer = customers[parseInt($('#customer-select').val())];
+        let clone = Object.assign({}, customer); 
+        clone.timestamp = new Date().getTime();        
+        let json = JSON.stringify(clone, null, 2);
+        // Encrypt
+        let ciphertext = CryptoJS.AES.encrypt(json,sharedKey);
+        
+        // Decrypt
+        let bytes  = CryptoJS.AES.decrypt(ciphertext.toString(), sharedKey);
+        var plaintext = bytes.toString(CryptoJS.enc.Utf8);
+        
+        $('#output').text('ORIGINAL:\n'+json+'\n\nENCRYPTED:\n'+ciphertext+'\n\nDECRYPTED:\n'+plaintext);
+    });
+
+    $('#search-visitors').on('click', function() {
+        $.ajax(visitorsURL + '?Spectrio-Portal-Auth='+encodeURIComponent(encryptCustomer()))
+        .done(function(responseObj) {
+            console.log(responseObj);
+            $('#output').text(JSON.stringify(responseObj, null, 2));
+        });
+    });
+    $('#search-call-logs').on('click', function() {
+        $.ajax(callLogsURL + '?Spectrio-Portal-Auth='+encodeURIComponent(encryptCustomer()))
+        .done(function(responseObj) {
+            console.log(responseObj);
+            $('#output').text(JSON.stringify(responseObj, null, 2));
+        });
+    });
 
     if (Cookies.get('loggedInX')!='true') {
         $('#loginModal').modal('show');
@@ -117,5 +164,6 @@ $(document).ready(function() {
         document.location.reload();
     });
 
-});            
+});
+
 // END ADMIN

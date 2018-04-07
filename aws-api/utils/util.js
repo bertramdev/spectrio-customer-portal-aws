@@ -21,6 +21,7 @@ var constants;
 var moment;
 var dynamoDb;
 var AWS;
+var auth;
 
 function getElasticClient() {
 	if (!_elasticClient) {
@@ -52,7 +53,8 @@ module.exports.postToES = function(customerId, indexPrefix, docType, docs, callb
 }
 
 module.exports.searchES = function(customerId, indexPrefix, timeBased, docType, query, callback) {
-    query = query || {"query": { "match_all": {} }, "size":20};
+	query = query || {"query": { "match_all": {} }, "size":20};
+	if (query['Spectrio-Portal-Auth']) delete query['Spectrio-Portal-Auth'];
     if (query instanceof String) query = JSON.parse(query);
     getElasticClient().search({
         index: indexPrefix+'_'+customerId+(timeBased?'_*':''),
@@ -88,6 +90,37 @@ module.exports.putESTemplate = function(name, indexPattern, mappings, callback) 
 
 module.exports.getCustomerData = function(event, callback) {
 	//look for auth first
+	let encryptedAuthString
+	if (event.headers && event.headers['Spectrio-Portal-Auth']) {
+		encryptedAuthString = event.headers['Spectrio-Portal-Auth'];
+	}
+	if (!encryptedAuthString && 
+		event.queryStringParameters && 
+		event.queryStringParameters['Spectrio-Portal-Auth']) {
+		encryptedAuthString = event.queryStringParameters['Spectrio-Portal-Auth'];
+	}
+	if (encryptedAuthString) {
+		console.log('found encrypted string: '+encryptedAuthString);
+		auth = auth || require("../utils/auth");
+		try {
+			let customer = auth.decryptObject(encryptedAuthString);
+			console.log('found customer: '+JSON.stringify(customer));
+			if (!customer) {
+				callback('Customer not found', null);
+			}
+			else if (customer.timestamp < (new Date().getTime() - 300000)) {
+				callback(null, customer);
+			}
+			else {
+				callback(null, customer);
+			}
+		}
+		catch(ex) {
+			callback(ex, null);			
+		}
+		return;
+	}
+	// temporary no security stuff
 	let customerId;
 	if (event.headers) {
 		customerId = event.headers['customerId'];
@@ -99,7 +132,7 @@ module.exports.getCustomerData = function(event, callback) {
 		customerId = event.body.customerId;
 	}
 	if (!customerId) {
-		callback('Customer id not found', null);			
+		callback('Customer id not found', null);
 		return;
 	}
 	AWS = AWS || require('aws-sdk'); 

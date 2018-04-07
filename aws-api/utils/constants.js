@@ -9,6 +9,8 @@ module.exports.DYNAMODB_TABLES = {
 	"visits": process.env.DYNAMODB_VISITS_TABLE
 };
 
+module.exports.SHARED_KEY = process.env.SHARED_KEY;
+
 const now = new Date();
 
 module.exports.MOMENTS = {

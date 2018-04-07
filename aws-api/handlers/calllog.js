@@ -155,7 +155,7 @@ module.exports.search = (event, context, callback) => {
 					delete input.q;
 				}
 			}
-			util.searchES(customerId, constants.esDomain.index, false, constants.esDomain.doctype, input, (err, respBody) => {
+			util.searchES(customerId, constants.esDomain.index, true, constants.esDomain.doctype, input, (err, respBody) => {
 				let output = [],
 					meta = {};
 				if (respBody) {
