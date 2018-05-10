@@ -44,3 +44,6 @@ table.table-fixed thead tr th {
 	font-size:smaller;
 	padding:20px;
 }
+.bg-light {
+    background-color: #eee!important;
+}
