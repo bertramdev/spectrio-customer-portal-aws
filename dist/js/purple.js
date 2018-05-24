@@ -1,6 +1,6 @@
-var customerURL = 'https://'+proxyHost+'/dev/customer';
-var purpleProxy = 'https://'+proxyHost+'/dev/purple-wifi-proxy';
-var purpleFetchAggs = 'https:/'+proxyHost+'/dev/wifi-fetch-venue-totals';
+var customerURL = 'https://'+proxyHost+'/customer';
+var purpleProxy = 'https://'+proxyHost+'/purple-wifi-proxy';
+var purpleFetchAggs = 'https:/'+proxyHost+'/wifi-fetch-venue-totals';
 var accountId = 4286;
 var customerId;
 var venues;

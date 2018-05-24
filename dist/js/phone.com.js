@@ -1,6 +1,6 @@
-var customerURL = 'https:/'+proxyHost+'/dev/customer';
-var customersURL = 'https:/'+proxyHost+'/dev/customers';
-var aggregateURL = 'https:/'+proxyHost+'/dev/call-log-aggregate';
+var customerURL = 'https:/'+proxyHost+'/customer';
+var customersURL = 'https:/'+proxyHost+'/customers';
+var aggregateURL = 'https:/'+proxyHost+'/call-log-aggregate';
 var customerId;
 var accountId;
 var lastOffset = 0;

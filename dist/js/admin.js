@@ -1,10 +1,10 @@
 // ADMIN
 var sharedKey = 'S2B4PFPiQKPCVoPU4l8EM8A3AsIGCXVXVfEbcTXB7sZsYqjJpJ58qVNbHzHCbt2';
-var purpleAggregate = 'https://'+proxyHost+'/dev/wifi-trigger-calc-cust-venues-totals';
-var customerURL = 'https://'+proxyHost+'/dev/customer';
-var visitorsURL = 'https://'+proxyHost+'/dev/wifi-search';
-var callLogsURL = 'https://'+proxyHost+'/dev/call-log-search';
-var purpleProxyURL = 'https://'+proxyHost+'/dev/purple-wifi-proxy';
+var purpleAggregate = 'https://'+proxyHost+'/wifi-trigger-calc-cust-venues-totals';
+var customerURL = 'https://'+proxyHost+'/customer';
+var visitorsURL = 'https://'+proxyHost+'/wifi-search';
+var callLogsURL = 'https://'+proxyHost+'/call-log-search';
+var purpleProxyURL = 'https://'+proxyHost+'/purple-wifi-proxy';
 
 var customers = [
     {id: 1335221,customerName: 'LabCorp',timeZoneOffset: -7,phoneAccountId: 1335221,phoneApiToken: '2MGwU2rQ0dmx3ao6H89pMMhBuoUPQbxSCIyclJVCLHAQGCMw'},
