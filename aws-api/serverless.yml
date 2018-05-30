@@ -9,6 +9,7 @@ provider:
     STAGE: ${opt:stage, self:provider.stage}
  #timeout: 30 # optional, in seconds, default is 6
   environment:
+    CALL_LOG_RENTENTION_MONTHS: ${opt:stage, '3'}
     SHARED_KEY: S2B4PFPiQKPCVoPU4l8EM8A3AsIGCXVXVfEbcTXB7sZsYqjJpJ58qVNbHzHCbt2
     DYNAMODB_CUSTOMERS_TABLE: wifi-${opt:stage, self:provider.stage}-customers
     DYNAMODB_VENUES_TABLE: wifi-${opt:stage, self:provider.stage}-venues
@@ -20,6 +21,15 @@ provider:
     STAGE: dev
     ELASTIC_URL:
       Fn::GetAtt: [ CallLogESDomain , DomainEndpoint ]
+    DROP_CALL_LOGS_TOPIC:
+      Fn::Join:
+        - ":"
+        - - arn
+          - aws
+          - sns
+          - Ref: AWS::Region
+          - Ref: AWS::AccountId
+          - dropCallLogs-${opt:stage, self:provider.stage}
     IMPORT_CALL_LOGS_TOPIC:
       Fn::Join:
         - ":"
@@ -274,6 +284,20 @@ functions:
           path: call-log-drop
           method: get
           cors: true
+      - sns: dropCallLogs-${opt:stage, self:provider.stage}
+  triggerCallLogDrops:
+    tags:
+      STACK: ${self:service}
+      STAGE: ${opt:stage, self:provider.stage}
+    handler: /handlers/calllog.triggerCallLogDrops
+    name: ${self:service}-${opt:stage, self:provider.stage}-trigger-call-log-drops
+    timeout: 300
+    events:
+      - http:
+          path: trigger-call-log-drops
+          method: get
+          cors: true
+      - schedule: cron(0 2 1 * ? *)
   callLogDropAll:
     tags:
       STACK: ${self:service}

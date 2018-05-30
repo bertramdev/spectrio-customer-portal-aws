@@ -1,4 +1,6 @@
 //https://wubeplw72h.execute-api.us-east-1.amazonaws.com
-//wubeplw72h.execute-api.us-east-1.amazonaws.com/dev
-//fmrkicyqqg.execute-api.us-east-1.amazonaws.com/staging
-var proxyHost = 'fmrkicyqqg.execute-api.us-east-1.amazonaws.com/staging';
+//wubeplw72h.execute-api.us-east-1.amazonaws.com/dev -- jerleng@hotmail.com
+//fmrkicyqqg.execute-api.us-east-1.amazonaws.com/staging -- jerleng@hotmail.com 
+//2zqeuqq1sj.execute-api.us-east-1.amazonaws.com/staging -- 10footwave
+var proxyHost = '2zqeuqq1sj.execute-api.us-east-1.amazonaws.com/staging';
+//var proxyHost = 'wubeplw72h.execute-api.us-east-1.amazonaws.com/dev';

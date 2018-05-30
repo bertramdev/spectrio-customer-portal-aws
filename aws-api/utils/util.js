@@ -71,8 +71,10 @@ module.exports.searchES = function(customerId, indexPrefix, timeBased, docType, 
       });
 }
 
-module.exports.dropES = function(customerId, indexPrefix, callback) {
-    let indexName = indexPrefix + (customerId ? '_'+customerId+'_*' : '_*'); 
+module.exports.dropES = function(customerId, monthString, indexPrefix, callback) {
+	let append = monthString ? '_'+monthString : '';
+	let prepend = customerId ? '_'+customerId : '';
+    let indexName = indexPrefix+prepend+append; 
     getElasticClient().indices.delete({"index":indexName}, callback);
 }
 

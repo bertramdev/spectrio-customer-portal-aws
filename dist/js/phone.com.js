@@ -150,7 +150,7 @@ function exportCSV(csv, name) {
     document.body.removeChild(link);               
 }
 
-const PAGE_SIZE = 350;
+var PAGE_SIZE = 350;
 
 function exportCallLogs(days) {
     document.body.style.cursor='wait';

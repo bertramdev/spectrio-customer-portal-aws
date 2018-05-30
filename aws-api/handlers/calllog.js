@@ -64,12 +64,6 @@ function formatDoc(item, tzOffset) {
     return item;    
 }
 
-
-function dropES(customerId, callback) {
-    let indexName = constants.esDomain.index + (customerId ? '_'+customerId+'_*' : '_*'); 
-    elasticClient.indices.delete({"index":indexName}, callback);
-}
-
 // page through 250 at a time
 function fetchCallLogs(customerId, url, header, offset, tzOffset) {
     offset = offset || 0;
@@ -366,25 +360,54 @@ module.exports.aggregate = (event, context, callback) => {
     });
 };
 
-module.exports.drop = (event, context, callback) => {
-    let customerId = event.queryStringParameters.customerId;
-    if (!customerId) {
-        callback(null, util.getCallbackBody(true, 400, 'customerId missing'));
-        return;
+module.exports.triggerCallLogDrops = (event, context, callback) => {
+    let customerId = (event.queryStringParameters ? event.queryStringParameters.customerId : '*') || '*';
+    let month = event.queryStringParameters ? event.queryStringParameters.month : null;
+    if (!month) {
+        let prune = parseInt(process.env.CALL_LOG_RENTENTION_MONTHS || '3') + 1;
+        let pruneMonth = moment().subtract(prune, 'months').startOf('month');
+        month = pruneMonth.format('YYYYMM');
     }
-    util.dropES(customerId, function(err, respBody) {
-        if (err) {
-            console.log(err);
-            callback(null, util.getCallbackBody(true, 400, 'Drop failed: '+err));
-        }
+    let msg = {
+        'customerId' : customerId,
+        'month':month
+    };
+    sns.publish({ Message:JSON.stringify(msg), TopicArn: process.env.DROP_CALL_LOGS_TOPIC }, (error) => {
+        if (error) console.error(error);
+    });    
+    callback(null, util.getCallbackBody(true, 200, 'Drop triggered'));
+}
+
+module.exports.drop = (event, context, callback) => {
+	console.log(event);
+    var prmSet = []
+    if (event.Records) {
+        event.Records.forEach(function(rec) {
+            if (rec.Sns) prmSet.push(JSON.parse(rec.Sns.Message));
+        });
+    }
+    else{
+        prmSet.push(event.queryStringParameters);
+    }
+    prmSet.forEach(function(prms){
+        let customerId = prms.customerId,
+            monthString =  prms.month;
+        if (!customerId) {
+            console.log('customerId missing');
+        } 
         else {
-            callback(null, util.getCallbackBody(true, 200, 'Drop completed: '+JSON.stringify(respBody)));
+            util.dropES(customerId, monthString, 'call_logs', function(err, respBody) {
+                if (err) {
+                    console.log(err);
+                }
+            });    
         }
     });
+    callback(null, util.getCallbackBody(true, 200, 'Drop initiated'));    
 };
 
 module.exports.dropAll = (event, context, callback) => {
-    util.dropES(null, constants.esDomain.index, constants.esDomain.doctype, function(err, respBody) {
+    util.dropES(null, null, 'call_logs', function(err, respBody) {
         if (err) {
             console.log(err);
             callback(null, util.getCallbackBody(true, 400, 'Drop failed: '+err));
