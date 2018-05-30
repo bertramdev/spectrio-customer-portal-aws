@@ -16,7 +16,7 @@
 		<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
 		<a class="navbar-brand" href="#">
 			<img alt="Brand" height="60" src="https://www.spectrio.com/wp-content/uploads/2018/04/spectriologo.png"/>		
-			Wifi POC		
+			Wifi POC
 		</a>
 		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
@@ -38,7 +38,18 @@
 		</nav>		
 		<div class="container-fluid">
             <form>
-            <div class="form-group row" id="venues-section">
+                <div class="form-group row">
+                    <label class="col-sm-2">Customers</label>
+                    <div class="col-sm-10">
+                        <div class="pb-2">
+                            <select class="form-control" id="customer-select" name="customer">
+                                
+                            </select>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="form-group row" id="venues-section">
                 <label for="venues" class="col-sm-2">Venues</label>
                 <div class="col-sm-8">
                     <select class="form-control" id="venues-select" name="venues">
@@ -192,8 +203,9 @@
             google.charts.load('current', {'packages':['corechart']});
         </script>
 		<script src="./js/aws.js"></script>
-		<script src="./js/purple.js"></script>
+		<script src="./js/purple.js?poo"></script>
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDs1ehZE1qyN6A-PvP1RuLxoXuQ35b2goA&callback=myMap"></script>                    
     </body>
 
 </html>
+

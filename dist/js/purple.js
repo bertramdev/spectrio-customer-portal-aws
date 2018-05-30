@@ -1,7 +1,8 @@
 var customerURL = 'https://'+proxyHost+'/customer';
+var customersURL = 'https:/'+proxyHost+'/customers';
+
 var purpleProxy = 'https://'+proxyHost+'/purple-wifi-proxy';
 var purpleFetchAggs = 'https:/'+proxyHost+'/wifi-fetch-venue-totals';
-var accountId = 4286;
 var customerId;
 var venues;
 function getVenues() {
@@ -62,17 +63,39 @@ function myMap() {
     map = new google.maps.Map(mapCanvas, mapOptions);
 }
 
+var customers = [];
+
 function init() {
-    $.ajax(customerURL+'/'+accountId)
-    .done(function(respObj) {
-        if (respObj && respObj.success) {
-            customerId = respObj.data.purpleAccountId;
-            getVenues();                        
+    $.ajax(customersURL)
+    .done(function(data) {
+        console.log(data);
+        if (data.success) {
+            let html = '';
+            data.data.sort(function(a,b) {return (a.customerName.toLowerCase() > b.customerName.toLowerCase()) ? 1 : ((b.customerName.toLowerCase() > a.customerName.toLowerCase()) ? -1 : 0);} );             
+            data.data.forEach(function(itm){
+                if (itm.purpleAccountId) {
+                    html += '<option value="'+itm.id+'">'+itm.customerName+'</option>';
+                    customers.push(itm);
+                }
+            });
+            $('#customer-select').append(html);
+            $('#customer-select').val('4286');
+            loadData();
         }
         else {
-            alert('Huge problem!');
+            alert(data.message);
         }
-    });                
+    });
+}
+
+function loadData() {
+    console.log(customers);
+    var accountId = $('#customer-select').val();
+    var customer = $.grep(customers, function(itm, idx) {
+        return itm.id == accountId;
+    })[0];
+    customerId = customer.purpleAccountId;
+    getVenues();     
 }
 
 function exportCSV(csv, name) {
@@ -207,6 +230,9 @@ function selectVenue(matchId) {
 }
 
 $(document).ready(function() {
+    
+    $('#customer-select').on('change', loadData);
+    
     if (Cookies.get('loggedInX')!='true') {
         $('#loginModal').modal('show');
     }

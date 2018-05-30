@@ -11,6 +11,7 @@ var customers = [
     {id: 113703,customerName: 'Bill Richie',timeZoneOffset: -7,phoneAccountId: 113703,phoneApiToken: 'Z50ACUNZW4GtaTT0rp6ugN7HEVdtRB2Q2AAJMM8IVuXlZUCL'},
     {id: 108193,customerName: 'Tastea Costa Mesa',timeZoneOffset: -7,phoneAccountId: 108193,phoneApiToken: 'zZ79AMhUzyQJp9T8CbNlKRcnnCPBbvfwHIGj9VEIZNhymL1k'},
     {id: 4286, customerName: 'Spectrio',purpleAccountId: 4286,timeZoneOffset: -7,purplePublicKey: 'ca722481fcff8361d4fe2ac3a476aba4',purplePrivateKey: 'fcc4780fc12bdf89e0bc81371e45d9b3',phoneAccountId: 74241,phoneApiToken: 'YcUnhXPWWwZXfj2itaF7iPhZkmCb0DIhBDPZLy8MORKr0a5H'},
+    {id: 7212, customerName: 'Jiffy Lube',purpleAccountId: 7212,timeZoneOffset: -7,purplePublicKey: '851873eb64440149735dceffd1930b0e',purplePrivateKey: '378905ffd80d7fb588184a9cdf06e5df'},
     {customerName: "Intellitouch",id: 51503,phoneAccountId: 51503,phoneApiToken: "ZtAutZU7Bkt9gjxd45KyJA8Bn1FePVpb3eUjy2dv3JD86rEF",timeZoneOffset: -7},
     {customerName: "acquisitions",id: 71144,phoneAccountId: 71144,phoneApiToken: "W7x3KHqn9MpYMSvQv3kpRQi5TIjxe0gZ5WnqNgCjE8kBWC4K",timeZoneOffset: -7},
     {customerName: "guardian-host",id: 98346,phoneAccountId: 98346,phoneApiToken: "aLHVqdiywth8iP1CgQfXVNBzwjcbBxPEkSB5nQ8bksZvkJtR",timeZoneOffset: -7},
