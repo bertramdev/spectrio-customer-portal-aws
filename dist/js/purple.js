@@ -191,9 +191,12 @@ function selectVenue(matchId) {
         $('.export-btn').removeAttr('disabled');       
     }
     else if (matchId == 'all') {
-        let onlineNow = 0, online24 = 0;
+        var onlineNow = 0, online24 = 0;
         var bounds = new google.maps.LatLngBounds();
         venues.forEach(function(venue) {
+            onlineNow += parseInt(venue.users_online_now)
+            online24 += parseInt(venue.users_online_24_hours)
+                
             addressString += venue.name + '\n'+venue.address1+'\n';
             if (venue.address2) addressString += venue.address2 + '\n';
             if (venue.address3) addressString += venue.address3 + '\n';
@@ -216,6 +219,7 @@ function selectVenue(matchId) {
             marker.setMap(map);
     
         });       
+
         map.fitBounds(bounds);
         $('#onlineNow').text(onlineNow);
         $('#online24').text(online24);

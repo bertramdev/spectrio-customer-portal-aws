@@ -118,7 +118,7 @@ function storeCustomers() {
     //alert('Done');
 }
 function requestAggs(url, customerId, s, e, stop) {
-    var timeout = url == purpleAggregate ? 12000 : 3000;
+    var timeout = url == purpleAggregate ? 15000 : 3000;
     var now = new Date();
     if(s.isSameOrBefore(stop)) {
         var q = '&from='+s.format('YYYYMMDD')+'&to='+e.format('YYYYMMDD');
