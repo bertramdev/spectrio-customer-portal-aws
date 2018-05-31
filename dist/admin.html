@@ -51,12 +51,11 @@ pre {
                 <div class="col-sm-10">
                     <button class="btn btn-warning" type="button" id="store-customers">Store Customer Configurations</button>
                     <div class="btn-group">
-                        <button type="button" id="store-all" data-days="30" class="btn btn-warning">Aggregate Wifi Guests Since <span id="visitor-days2"></span></button>
-                        <button type="button" class="btn btn-warning dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="sr-only">Toggle Dropdown</span>
-                        </button>
-                        <div class="dropdown-menu" id="days-dropdown">
-                        </div>
+                        <input class="form-control" type="date" name="start"/>
+                        <span class="pt-2 pr-2 pl-2">to</span>
+                        <input class="form-control" type="date" name="end"/>
+                        <button type="button" id="store-all" class="btn btn-warning">Aggregate Venue Wifi Totals</button>
+                        <button type="button" id="agg-cust" class="btn btn-warning">Aggregate Customer Wifi Totals</button>
                     </div>
                 </div>
             </div>
@@ -113,7 +112,7 @@ pre {
         </div>        
 		<script src="./js/aws.js"></script>
         <script type="text/javascript" src="./js/bower_components/crypto-js/crypto-js.js"></script>
-		<script src="./js/admin.js"></script>
+		<script src="./js/admin.js?token=123"></script>
     </body>
 
 </html>

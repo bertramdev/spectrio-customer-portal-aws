@@ -1,6 +1,7 @@
 // ADMIN
 var sharedKey = 'S2B4PFPiQKPCVoPU4l8EM8A3AsIGCXVXVfEbcTXB7sZsYqjJpJ58qVNbHzHCbt2';
 var purpleAggregate = 'https://'+proxyHost+'/wifi-trigger-calc-cust-venues-totals';
+var purpleAggregateCust = 'https://'+proxyHost+'/wifi-trigger-aggregate-cust-totals';
 var customerURL = 'https://'+proxyHost+'/customer';
 var visitorsURL = 'https://'+proxyHost+'/wifi-search';
 var callLogsURL = 'https://'+proxyHost+'/call-log-search';
@@ -116,20 +117,27 @@ function storeCustomers() {
     });
     //alert('Done');
 }
-function requestAggs(s, e) {
-    let now = new Date();
-    if(s.isBefore(now)) {
+function requestAggs(url, customerId, s, e, stop) {
+    var timeout = url == purpleAggregate ? 12000 : 3000;
+    var now = new Date();
+    if(s.isSameOrBefore(stop)) {
         var q = '&from='+s.format('YYYYMMDD')+'&to='+e.format('YYYYMMDD');
         console.log(q);
-        $.ajax(purpleAggregate + '?customerId=4286'+q)
+        $.ajax(url + '?customerId='+customerId+q)
         .done(function(responseObj) {
+            responseObj.url = url + '?customerId='+customerId+q;
+            responseObj.customerId = customerId;
+            responseObj.from = s.format('YYYYMMDD');
+            responseObj.to = e.format('YYYYMMDD');
             console.log(responseObj);
             let o = $('#output').text();
             o += (JSON.stringify(responseObj, null, 2)+'\n');
             $('#output').text(o);
-            s.add(2, 'days');
-            e.add(2, 'days');
-            requestAggs(s, e);
+            s.add(1, 'days');
+            e.add(1, 'days');
+            setTimeout(function() {
+                requestAggs(url, customerId, s, e , stop);
+            }, timeout);
         });
     }
     else {
@@ -138,30 +146,19 @@ function requestAggs(s, e) {
     
 }
 
-function aggregateVisitors() {
-    var range = parseInt($('#store-all').data('days'));
-    var now = new Date();
-    var s = moment().add(-1*range, 'days');
-    var e = moment(s).add(1, 'days');
+function aggregateVisitors(url) {
+    var stop = moment($('input[name="end"]').val());
+    var s = moment($('input[name="start"]').val());
+    var e = moment(s);//.add(1, 'days');
     var o = '';
     $('#output').text(null);
-    requestAggs(s, e);
+    var customerId = customers[parseInt($('#customer-select').val())].id;
+    requestAggs(url, customerId, s, e, stop);
 
 }
 $(document).ready(function() {
-    let dd = $('#days-dropdown');
-    let nowM = moment();
-    let o = '';
-    for (let ii = 1; ii <= 30; ii++) {
-        nowM.add(-1, 'days');
-        o +='<a class="dropdown-item store-range" href="#" data-days="'+ii+'">'+nowM.format('MM/DD/YYYY')+'</a>';
-        if (ii == 7) {
-            $('#visitor-days2').text(nowM.format('MM/DD/YYYY'));
-        }
-    }
-    dd.append(o);
     customers.forEach(function(customer, idx) {
-        $('#customer-select').append('<option value="'+idx+'">'+customer.customerName+"</option>");
+        $('#customer-select').append('<option value="'+idx+'">'+customer.customerName+(customer.purpleAccountId ? '*':'')+"</option>");
     });
     let encryptCustomer = () => {
         let customer = customers[parseInt($('#customer-select').val())];
@@ -220,7 +217,10 @@ $(document).ready(function() {
         $('#visitor-days2').text(m.format('MM/DD/YYYY'));
     });
     $('#store-all').on('click', function() {
-        aggregateVisitors();
+        aggregateVisitors(purpleAggregate);
+    });
+    $('#agg-cust').on('click', function() {
+        aggregateVisitors(purpleAggregateCust);
     });
 
     $('#store-customers').on('click', function() {
